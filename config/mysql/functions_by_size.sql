@@ -7,5 +7,5 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `functions_by_size`()
 	SQL SECURITY DEFINER
 	COMMENT ''
 BEGIN
-select name, size from functions natural join symbols where parent_class_id != parent_symbol_id order by size desc limit 1000 ;
+select name, size from functions natural join symbols order by size desc limit 1000 ;
 END
