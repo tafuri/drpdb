@@ -31,10 +31,11 @@ namespace CSV
 		void operator<<(const Sym::address_info& V);
 		void operator<<(const std::string& V);
 		void operator<<(bool V);
+		void operator<<(long long V);
 
 
-#define BEGIN_STRUCT(type, name) void operator<<(const type &V){
-#define MEMBER(name) *this << V.name;
+#define BEGIN_STRUCT(type, name, desc,category) void operator<<(const type &V){
+#define MEMBER(name, desc) *this << V.name;
 #define END_STRUCT() }
 
 #define BEGIN_ENUMERATION(name) void operator<<(name V){ out += "\""; switch (V) {

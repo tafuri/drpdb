@@ -31,7 +31,7 @@ namespace MySQL
 				set_error("Failed to initialize mysql");
 			}
 		}
-		void exec(const char* begin, const char* end)
+		void execute(const char* begin, const char* end)
 		{
 			if (mysql)
 			{
@@ -220,7 +220,7 @@ namespace MySQL
 		void GenerateCommands()
 		{
 			GenerateProcedures();
-	#define BEGIN_STRUCT(type, name) BuildTable(Results.type, #name );
+#define BEGIN_STRUCT(type, name, desc,category) BuildTable(Results.type, #name );
 
 	#include "PDBReflection.inl"
 		}
@@ -238,7 +238,7 @@ namespace MySQL
 		int i = 0;
 		while (!has_error() && i<Result.UploadCommands.size())
 		{
-			conn.exec(Result.UploadCommands[i].data(), Result.UploadCommands[i].data() + Result.UploadCommands[i].size());
+			conn.execute(Result.UploadCommands[i].data(), Result.UploadCommands[i].data() + Result.UploadCommands[i].size());
 			++i;
 		}
 	}

@@ -23,6 +23,13 @@ struct IDiaFrameData;
 
 namespace Sym
 {
+	enum class TableType
+	{
+		Master,
+		Data,
+		Function,
+		Files
+	};
 	struct address_info
 	{
 		uint32_t rv;
@@ -126,7 +133,7 @@ namespace Sym
 		ILASM,
 		JAVA,
 		JS,
-		MSIL,
+		CIL,
 		HLSL
 	};
 
@@ -191,7 +198,7 @@ namespace Sym
 		uint32_t index_;
 		uint32_t timestamp;
 		uint32_t uid;
-		bool pdb_available_at_il_merge:1;
+		bool pdb_available_at_il_merge : 1;
 		InputAssembly()  noexcept {}
 		InputAssembly(struct IDiaInputAssemblyFile*)  noexcept;
 	};
@@ -202,19 +209,19 @@ namespace Sym
 		uint32_t data_crc;
 		uint32_t length;
 		uint32_t relocations_crc;
-		bool code:1;
-		bool code_16bit:1;
-		bool comdat:1;
-		bool executable:1;
-		bool discardable:1;
-		bool initialized_data:1;
-		bool uninitialized_data:1;
-		bool cached:1;
-		bool paged:1;
-		bool readable:1;
-		bool writeable:1;
-		bool remove:1;
-		bool share:1;
+		bool code : 1;
+		bool code_16bit : 1;
+		bool comdat : 1;
+		bool executable : 1;
+		bool discardable : 1;
+		bool initialized_data : 1;
+		bool uninitialized_data : 1;
+		bool cached : 1;
+		bool paged : 1;
+		bool readable : 1;
+		bool writeable : 1;
+		bool remove : 1;
+		bool share : 1;
 		SectionContrib()  noexcept {}
 		SectionContrib(IDiaSectionContrib*)  noexcept;
 	};
@@ -230,10 +237,10 @@ namespace Sym
 		uint32_t length_saved_registers;
 		uint32_t type_symbol;
 
-		bool exceptions_system:1;
-		bool exceptions_cxx:1;
-		bool function_start:1;
-		bool allocate_base_pointer:1;
+		bool exceptions_system : 1;
+		bool exceptions_cxx : 1;
+		bool function_start : 1;
+		bool allocate_base_pointer : 1;
 
 		Frame() noexcept {}
 		Frame(IDiaFrameData*)  noexcept;
@@ -241,14 +248,13 @@ namespace Sym
 	struct Segment
 	{
 		uint32_t address_section;
-		uint64_t address_v;
 		uint32_t address_rv;
 		uint32_t frame;
 		uint32_t length;
 		uint32_t offset;
-		bool executable:1;
-		bool readable:1;
-		bool writable:1;
+		bool executable : 1;
+		bool readable : 1;
+		bool writable : 1;
 
 		Segment()  noexcept {}
 		Segment(struct IDiaSegment*)  noexcept;
@@ -295,8 +301,8 @@ namespace Sym
 		uint32_t symbol;
 		address_info address;
 		Type type;
-		bool managed:1;
-		bool msil:1;
+		bool managed : 1;
+		bool cil : 1;
 		PublicSymbol()  noexcept {}
 		PublicSymbol(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
 	};
@@ -316,17 +322,17 @@ namespace Sym
 		uint32_t backend_qfe;
 		Language language;
 		CPU platform;
-		bool sdl:1;
-		bool pgo:1;
-		bool security_check:1;
-		bool managed:1;
-		bool debug_info:1;
-		bool edit_and_continue:1;
-		bool ltcg:1;
-		bool data_aligned:1;
-		bool hotpatchable:1;
-		bool cvtcil:1;
-		bool msil_netmodule:1;
+		bool sdl : 1;
+		bool pgo : 1;
+		bool security_check : 1;
+		bool managed : 1;
+		bool debug_info : 1;
+		bool edit_and_continue : 1;
+		bool ltcg : 1;
+		bool data_aligned : 1;
+		bool hotpatchable : 1;
+		bool cvtcil : 1;
+		bool cil_netmodule : 1;
 		Compiland()  noexcept {}
 		Compiland(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
 		void AppendDetails(IDiaSymbol*);
@@ -345,8 +351,8 @@ namespace Sym
 		std::string symbols_path;
 		uint32_t symbol;
 		uint32_t age;
-		bool ctypes:1;
-		bool stripped:1;
+		bool ctypes : 1;
+		bool stripped : 1;
 		uint32_t architecture;
 		uint32_t signature;
 
@@ -380,11 +386,11 @@ namespace Sym
 		//must match THUNK_ORDINAL
 		enum class Ordinal : uint8_t
 		{
-			NONE,  
-			ADJUSTOR,
-			VCALL,   
-			PCODE,   
-			LOAD,    
+			NONE,
+			THIS_ADJUSTOR,
+			VIRTUAL_CALL,
+			PCODE,
+			DELAY_LOAD,
 			TRAMPOLINE_INCREMENTAL,
 			TRAMPOLINE_BRANCHISLAND,
 		};
@@ -413,14 +419,14 @@ namespace Sym
 			CONSTANT
 		};
 		unsigned long symbol;
-		std::string value;
+		int64_t value;
 		uint32_t type_symbol;
 		uint32_t offset;
 		address_info address;
 		uint32_t register_id;
 		uint32_t bit_position;
 		Kind kind;
-		bool const_export:1;
+		bool const_export : 1;
 		Data()  noexcept {}
 		Data(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
 	};
@@ -441,41 +447,10 @@ namespace Sym
 			OVERRIDE,
 			NONE
 		};
-		//must match CV_call_e
-		enum class CallConv : uint8_t
-		{
-			NEAR_C = 0x00, // near right to left push, caller pops stack
-			FAR_C = 0x01, // far right to left push, caller pops stack
-			NEAR_PASCAL = 0x02, // near left to right push, callee pops stack
-			FAR_PASCAL = 0x03, // far left to right push, callee pops stack
-			NEAR_FAST = 0x04, // near left to right push with regs, callee pops stack
-			FAR_FAST = 0x05, // far left to right push with regs, callee pops stack
-			SKIPPED = 0x06, // skipped (unused) call index
-			NEAR_STD = 0x07, // near standard call
-			FAR_STD = 0x08, // far standard call
-			NEAR_SYS = 0x09, // near sys call
-			FAR_SYS = 0x0a, // far sys call
-			THISCALL = 0x0b, // this call (this passed in register)
-			MIPSCALL = 0x0c, // Mips call
-			GENERIC = 0x0d, // Generic call sequence
-			ALPHACALL = 0x0e, // Alpha call
-			PPCCALL = 0x0f, // PPC call
-			SHCALL = 0x10, // Hitachi SuperH call
-			ARMCALL = 0x11, // ARM call
-			AM33CALL = 0x12, // AM33 call
-			TRICALL = 0x13, // TriCore Call
-			SH5CALL = 0x14, // Hitachi SuperH-5 call
-			M32RCALL = 0x15, // M32R Call
-			CLRCALL = 0x16, // clr call
-			INLINE = 0x17, // Marker for routines always inlined and thus lacking a convention
-			NEAR_VECTOR = 0x18, // near left to right push with regs, callee pops stack
-			RESERVED = 0x19  // first unused call enumeration
-		};
 		uint32_t symbol;
 		uint32_t virtual_base_offset;
 		uint32_t type_symbol;
 		Sym::Access access;
-		CallConv call_convention;
 		Virtuality virtuality;
 		uint64_t pgo_dyn_instr_count;
 		uint32_t static_size;
@@ -484,60 +459,85 @@ namespace Sym
 		uint32_t final_live_static_size;
 		uint32_t frame_size;
 		address_info address;
-		address_info exception_handler;
+		address_info eh_address;
 		uint32_t pgo_entry_count;
-		bool control_flow_check:1;
-		bool alloca_:1;
-		bool exceptions:1;
-		bool asm_:1;
-		bool sealed:1;
-		bool security_checks:1;
-		bool inlined:1;
-		bool static_:1;
-		bool noinline:1;
-		bool noreturn:1;
-		bool unreachable:1;
-		bool setjmp_:1;
-		bool const_export:1;
-		bool strict_gs_check:1;
-		bool longjmp:1;
-		bool eh:1;
-		bool eha:1;
-		bool seh:1;
-		bool optimized_debug_info:1;
-		bool frame_pointer:1;
-		bool interrupt_return:1;
-		bool pure_virtual:1;
-		bool far_return:1;
-		bool naked:1;
-		bool inline_:1;
-		bool custom_call:1;
-		bool stack_ordering:1;
-		bool safebuffers:1;
-		bool pgo:1;
-		bool has_pgo_counts:1;
-		bool optimized_for_speed:1;
-		bool compiler_generated:1;
+		bool control_flow_check : 1;
+		bool alloca_ : 1;
+		bool exceptions : 1;
+		bool asm_ : 1;
+		bool sealed : 1;
+		bool security_checks : 1;
+		bool inlined : 1;
+		bool static_ : 1;
+		bool noinline : 1;
+		bool noreturn : 1;
+		bool unreachable : 1;
+		bool setjmp_ : 1;
+		bool const_export : 1;
+		bool strict_gs_check : 1;
+		bool longjmp : 1;
+		bool eh : 1;
+		bool eha : 1;
+		bool seh : 1;
+		bool optimized_debug_info : 1;
+		bool frame_pointer : 1;
+		bool interrupt_return : 1;
+		bool pure_virtual : 1;
+		bool far_return : 1;
+		bool naked : 1;
+		bool inline_ : 1;
+		bool custom_call : 1;
+		bool stack_ordering : 1;
+		bool safebuffers : 1;
+		bool pgo : 1;
+		bool has_pgo_counts : 1;
+		bool optimized_for_speed : 1;
+		bool compiler_generated : 1;
 
 		Function()  noexcept {}
 		Function(IDiaSymbol* sym, uint32_t symIndexId_)  noexcept;
 	};
+	struct VTablePtr
+	{
+		uint32_t symbol;
+		uint32_t offset;
+		uint32_t type_symbol;
+		VTablePtr() noexcept {}
+		VTablePtr(IDiaSymbol* sym, uint32_t symIndexId_) noexcept;
 
+	};
+
+	//my example pdbs never return a SymTagVTableShape...
+	struct VTableShape
+	{
+		uint32_t symbol;
+		uint32_t count;
+		VTableShape() noexcept {}
+		VTableShape(IDiaSymbol* sym, uint32_t symIndexId_) noexcept;
+	};
+
+	struct Friend
+	{
+		uint32_t symbol;
+		uint32_t type_symbol;
+		Friend() noexcept {}
+		Friend(IDiaSymbol* sym, uint32_t symIndexId_) noexcept;
+	};
 	struct Export
 	{
 		uint32_t symbol;
 		uint32_t address_offset;
 		uint32_t rank;
 		uint32_t ordinal;
-		bool const_export:1;
-		bool data_export:1;
-		bool private_export:1;
-		bool noname:1;
-		bool explicit_ordinal:1;
-		bool forwarder:1;
+		bool const_export : 1;
+		bool data_export : 1;
+		bool private_export : 1;
+		bool noname : 1;
+		bool explicit_ordinal : 1;
+		bool forwarder : 1;
 
-		bool function_:1;
-		bool const_:1;
+		bool function_ : 1;
+		bool const_ : 1;
 		Export()  noexcept {}
 		Export(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
 	};
@@ -555,21 +555,21 @@ namespace Sym
 		uint32_t line_numbers;
 		unsigned long size;
 		unsigned long relocations;
-		bool comdat:1;
-		bool executable:1;
-		bool readable:1;
-		bool writable:1;
-		bool discardable:1;
+		bool comdat : 1;
+		bool executable : 1;
+		bool readable : 1;
+		bool writable : 1;
+		bool discardable : 1;
 		std::string name;
 	};
 
 	struct Included
 	{
-		uint32_t compiland;
+		uint32_t compiland_symbol;
 		uint32_t source_id;
 		Included()  noexcept {}
-		Included(uint32_t compiland_, uint32_t src)  noexcept
-			:compiland(compiland_)
+		Included(uint32_t compiland, uint32_t src)  noexcept
+			:compiland_symbol(compiland)
 			, source_id(src) {}
 	};
 
@@ -604,11 +604,11 @@ namespace Sym
 		uint32_t type_symbol;
 		uint32_t count;
 		Kind kind;
-		bool unaligned:1;
-		bool const_:1;
-		bool volatile_:1;
-		bool const_export:1;
-		
+		bool unaligned : 1;
+		bool const_ : 1;
+		bool volatile_ : 1;
+		bool const_export : 1;
+
 		BuiltinType()  noexcept {}
 		BuiltinType(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
 	};
@@ -637,22 +637,24 @@ namespace Sym
 		};
 		uint32_t symbol;
 		uint32_t src_line;
-		uint32_t vtable_size;
+		uint32_t vtable_shape;
+		uint32_t vtable_count;
+		
 		Kind kind;
 		Aggregate aggregate_type;
 		Semantics semantics;
-		bool packed:1;
-		bool unaligned:1;
-		bool const_:1;
-		bool volatile_:1;
-		bool overloaded_operators:1;
-		bool nested:1;
-		bool has_nested_types:1;
-		bool assignment_operator:1;
-		bool cast_operator:1;
-		bool intrinsic:1;
-		bool scoped:1;
-		bool constructor:1;
+		bool packed : 1;
+		bool unaligned : 1;
+		bool const_ : 1;
+		bool volatile_ : 1;
+		bool overloaded_operators : 1;
+		bool nested : 1;
+		bool has_nested_types : 1;
+		bool assignment_operator : 1;
+		bool cast_operator : 1;
+		bool intrinsic : 1;
+		bool scoped : 1;
+		bool constructor : 1;
 		UserType()  noexcept {}
 		UserType(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
 	};
@@ -670,8 +672,8 @@ namespace Sym
 		uint32_t unmodified_type_symbol;
 		uint32_t type_symbol;
 		BuiltinType::Kind type;
-		bool packed:1;
-		bool scoped:1;
+		bool packed : 1;
+		bool scoped : 1;
 
 		Enum()  noexcept {}
 		Enum(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
@@ -711,11 +713,11 @@ namespace Sym
 		Inheritance inheritance;
 		MemberType member_type;
 		bool unaligned : 1;
-		bool const_:1;
-		bool volatile_:1;
-		bool restrict_:1;
-		bool constant_export:1;
-		bool virtual_inheritance:1;
+		bool const_ : 1;
+		bool volatile_ : 1;
+		bool restrict_ : 1;
+		bool constant_export : 1;
+		bool virtual_inheritance : 1;
 
 		Pointer()  noexcept {}
 		Pointer(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
@@ -724,19 +726,49 @@ namespace Sym
 
 	struct FunctionType
 	{
+		//must match CV_call_e
+		enum class CallConv : uint8_t
+		{
+			NEAR_C = 0x00, // near right to left push, caller pops stack
+			FAR_C = 0x01, // far right to left push, caller pops stack
+			NEAR_PASCAL = 0x02, // near left to right push, callee pops stack
+			FAR_PASCAL = 0x03, // far left to right push, callee pops stack
+			NEAR_FAST = 0x04, // near left to right push with regs, callee pops stack
+			FAR_FAST = 0x05, // far left to right push with regs, callee pops stack
+			SKIPPED = 0x06, // skipped (unused) call index
+			NEAR_STD = 0x07, // near standard call
+			FAR_STD = 0x08, // far standard call
+			NEAR_SYS = 0x09, // near sys call
+			FAR_SYS = 0x0a, // far sys call
+			THISCALL = 0x0b, // this call (this passed in register)
+			MIPSCALL = 0x0c, // Mips call
+			GENERIC = 0x0d, // Generic call sequence
+			ALPHACALL = 0x0e, // Alpha call
+			PPCCALL = 0x0f, // PPC call
+			SHCALL = 0x10, // Hitachi SuperH call
+			ARMCALL = 0x11, // ARM call
+			AM33CALL = 0x12, // AM33 call
+			TRICALL = 0x13, // TriCore Call
+			SH5CALL = 0x14, // Hitachi SuperH-5 call
+			M32RCALL = 0x15, // M32R Call
+			CLRCALL = 0x16, // clr call
+			INLINE = 0x17, // Marker for routines always inlined and thus lacking a convention
+			NEAR_VECTOR = 0x18, // near left to right push with regs, callee pops stack
+			RESERVED = 0x19  // first unused call enumeration
+		};
 		uint32_t symbol;
 		int32_t this_adjust;
 		uint32_t param_count;
-		uint32_t type_symbol;
+		uint32_t return_type_symbol;
 		uint32_t this_type_symbol;
-		bool is_constructor:1;
-		bool volatile_:1;
-		bool const_:1;
-		bool unaligned:1;
-		bool cxx_return_udt:1;
-		bool constructor_virtual_base:1;
-		bool constant_export:1;
-		Function::CallConv call_convention;
+		bool is_constructor : 1;
+		bool volatile_ : 1;
+		bool const_ : 1;
+		bool unaligned : 1;
+		bool cxx_return_udt : 1;
+		bool constructor_virtual_base : 1;
+		bool constant_export : 1;
+		CallConv call_convention;
 
 		FunctionType()  noexcept {}
 		FunctionType(IDiaSymbol*, uint32_t symIndexId_)  noexcept;
@@ -747,7 +779,7 @@ namespace Sym
 		uint32_t symbol;
 		uint32_t target_symbol;
 		address_info address;
-		Callsite(IDiaSession* session, IDiaSymbol* diaSymbol, uint32_t symIndexId_ )  noexcept;
+		Callsite(IDiaSession* session, IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept;
 		Callsite()  noexcept {}
 	};
 
@@ -787,7 +819,7 @@ namespace Sym
 	struct SrcRange
 	{
 		uint32_t id;
-		uint32_t compiland;
+		uint32_t compiland_symbol;
 		uint32_t src_file;
 		uint32_t line_begin;
 		uint32_t line_end;
@@ -797,7 +829,7 @@ namespace Sym
 		uint32_t length;
 		bool statement;
 		SrcRange()  noexcept {}
-		SrcRange(uint32_t id,  IDiaLineNumber* line) noexcept;
+		SrcRange(uint32_t id, IDiaLineNumber* line) noexcept;
 	};
 }
 
@@ -812,7 +844,7 @@ inline std::string wstrcvt(const wchar_t* s)
 	auto d = Result.begin();
 	for (auto i = 0; i < n; ++i)
 	{
-		d[i] = (char) s[i];
+		d[i] = (char)s[i];
 	}
 	return Result;
 }
@@ -851,6 +883,9 @@ struct SymbolData
 	std::vector<Sym::Block> Block;
 	std::vector<Sym::Inlined> Inlined;
 	std::vector<Sym::Frame> Frame;
+	std::vector<Sym::VTablePtr> VTablePtr;
+	std::vector<Sym::VTableShape> VTableShape;
+	std::vector<Sym::Friend> Friend;
 
 	template<class ELEMENT>
 	struct emplace_helper
@@ -907,6 +942,6 @@ struct OutputEngine
 };
 
 std::string getOption(const char* name);
-bool getFlag(const char* name );
+bool getFlag(const char* name);
 void set_error(const char* err);
 bool has_error();

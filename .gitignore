@@ -23,3 +23,7 @@ x64/Release/drpdb.ipdb
 x64/Debug/drpdb.log
 mysql-connector-c-6.1.6-winx64/bin/perror.exe
 mysql-connector-c-6.1.6-winx64/bin/my_print_defaults.exe
+*.opendb
+drpdb.VC.db
+drpdb/x64/Debug/drpdb.log
+*.log

@@ -19,19 +19,22 @@
     <ClCompile Include="src\ODBCOutput.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\DIACommon.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\DIAInput.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\drpdb.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\DIADoc.cpp">
+    <ClCompile Include="src\SQL.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\SQL.cpp">
+    <ClCompile Include="src\DIA2Input.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DIA2Doc.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DIA2Common.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WikiDoc.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

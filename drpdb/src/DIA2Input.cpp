@@ -5,7 +5,7 @@
 #include <windows.h>
 
 #include "drpdb.h"
-
+static bool no_addresses;
 enum SymTagEnum;
 
 Sym::BaseClass::BaseClass(IDiaSymbol* diaSymbol)  noexcept
@@ -27,7 +27,7 @@ Sym::BaseClass::BaseClass(IDiaSymbol* diaSymbol)  noexcept
 
 	diaSymbol->get_virtualBaseClass(&B);
 	virtual_ = !!B;
-	
+
 	diaSymbol->get_typeId(&D);
 	parent_symbol = D;
 
@@ -51,11 +51,11 @@ Sym::BaseClass::BaseClass(IDiaSymbol* diaSymbol)  noexcept
 			vbase_type_symbol = D;
 		}
 	}
-} 
+}
 Sym::Array::Array(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 {
 	symbol = symIndexId_;
-	
+
 	DWORD D;
 	diaSymbol->get_arrayIndexTypeId(&D);
 	index_type_symbol = D;
@@ -73,13 +73,16 @@ template<class T>
 void Sym::address_info::init(T* s)
 {
 	DWORD D = 0;
-	//s->get_relativeVirtualAddress(&D);
+	if (no_addresses == false)
+	{
+		s->get_relativeVirtualAddress(&D);
+	}
 	rv = D;
 }
 Sym::SectionContrib::SectionContrib(IDiaSectionContrib* dia)  noexcept
 {
-	BOOL B=0;
-	DWORD D=0;
+	BOOL B = 0;
+	DWORD D = 0;
 
 	address.init(dia);
 
@@ -142,7 +145,7 @@ Sym::Block::Block(IDiaSymbol* dia, uint32_t symIndexId_)  noexcept
 Sym::HeapAllocation::HeapAllocation(IDiaSymbol* dia, uint32_t symIndexId_)  noexcept
 {
 	symbol = symIndexId_;
-	
+
 	address.init(dia);
 	DWORD D = 0;
 	dia->get_typeId(&D);
@@ -152,16 +155,13 @@ Sym::HeapAllocation::HeapAllocation(IDiaSymbol* dia, uint32_t symIndexId_)  noex
 Sym::Segment::Segment(IDiaSegment* segment)  noexcept
 {
 	BOOL B = 0;
-	DWORD D=0;
+	DWORD D = 0;
 	ULONGLONG LL = 0;
 	segment->get_addressSection(&D);
 	address_section = D;
 
 	segment->get_relativeVirtualAddress(&D);
 	address_rv = D;
-
-	segment->get_virtualAddress(&LL);
-	address_v = LL;
 
 	segment->get_frame(&D);
 	frame = D;
@@ -235,7 +235,7 @@ Sym::Export::Export(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 Sym::Typedef::Typedef(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 {
 	symbol = symIndexId_;
-	
+
 	DWORD D;
 	diaSymbol->get_typeId(&D);
 	type_symbol = D;
@@ -266,7 +266,7 @@ Sym::PublicSymbol::PublicSymbol(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  no
 	managed = !!B;
 
 	diaSymbol->get_msil(&B);
-	msil = !!B;
+	cil = !!B;
 	type = T;
 }
 Sym::FunctionArg::FunctionArg(IDiaSymbol* dia, uint32_t symIndexId_)  noexcept
@@ -278,7 +278,7 @@ Sym::FunctionArg::FunctionArg(IDiaSymbol* dia, uint32_t symIndexId_)  noexcept
 }
 Sym::Exe::Exe(IDiaSymbol* diaSymbol)  noexcept
 	:ctypes(false)
-	,architecture(0)
+	, architecture(0)
 {
 	GUID G;
 	DWORD D;
@@ -300,7 +300,7 @@ Sym::Exe::Exe(IDiaSymbol* diaSymbol)  noexcept
 
 	CComBSTR bstr;
 	if (SUCCEEDED(diaSymbol->get_symbolsFileName(&bstr)))
-		symbols_path = wstrcvt((wchar_t*) bstr);
+		symbols_path = wstrcvt((wchar_t*)bstr);
 
 	BOOL B = 0;
 	diaSymbol->get_isCTypes(&B);
@@ -320,8 +320,6 @@ Sym::Function::Function(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	DWORD D;
 	BOOL B;
 	ULONGLONG LL;
-	diaSymbol->get_callingConvention(&D);
-	call_convention = (CallConv)D;
 	symbol = symIndexId_;
 
 	B = 0;
@@ -365,7 +363,7 @@ Sym::Function::Function(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	frame_size = D;
 
 	diaSymbol->get_exceptionHandlerRelativeVirtualAddress(&D);
-	exception_handler.rv = D;
+	eh_address.rv = D;
 
 	diaSymbol->get_hasInlAsm(&B);
 	asm_ = !!B;
@@ -429,7 +427,7 @@ Sym::Function::Function(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 
 	diaSymbol->get_notReached(&B);
 	unreachable = !!B;
-	
+
 	diaSymbol->get_paramBasePointerRegisterId(&D);
 	pbp_regid = D;
 
@@ -505,18 +503,11 @@ Sym::InputAssembly::InputAssembly(IDiaInputAssemblyFile* sym)  noexcept
 Sym::Enum::Enum(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 {
 	BOOL B;
-	DWORD D;
 	DWORD BaseType;
 	diaSymbol->get_baseType(&BaseType);
 	type = (BuiltinType::Kind)BaseType;
 
 	symbol = symIndexId_;
-
-	diaSymbol->get_typeId(&D);
-	type_symbol = D;
-
-	diaSymbol->get_unmodifiedTypeId(&D);
-	unmodified_type_symbol = D;
 
 	diaSymbol->get_packed(&B);
 	packed = !!B;
@@ -562,7 +553,7 @@ Sym::Compiland::Compiland(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	ltcg = !!IsLTCG;
 }
 
-void Sym::Compiland::AppendDetails(IDiaSymbol* diaSymbol) 
+void Sym::Compiland::AppendDetails(IDiaSymbol* diaSymbol)
 {
 	DWORD D;
 	BOOL B;
@@ -571,15 +562,15 @@ void Sym::Compiland::AppendDetails(IDiaSymbol* diaSymbol)
 	D = 0;
 	diaSymbol->get_backEndBuild(&D);
 	backend_build = D;
-	
+
 	D = 0;
 	diaSymbol->get_backEndMajor(&D);
 	backend_major = D;
-	
+
 	D = 0;
 	diaSymbol->get_backEndMinor(&D);
 	backend_minor = D;
-	
+
 	D = 0;
 	diaSymbol->get_frontEndBuild(&D);
 	frontend_build = D;
@@ -595,30 +586,30 @@ void Sym::Compiland::AppendDetails(IDiaSymbol* diaSymbol)
 	B = 0;
 	diaSymbol->get_hasDebugInfo(&B);
 	debug_info = !!B;
-	
+
 	B = 0;
 	diaSymbol->get_isDataAligned(&B);
 	data_aligned = !!B;
-	
+
 	B = 0;
 	diaSymbol->get_isLTCG(&B);
 	ltcg = !!B;
-	
+
 	B = 0;
 	diaSymbol->get_isHotpatchable(&B);
 	hotpatchable = !!B;
-	
+
 	B = 0;
 	diaSymbol->get_isCVTCIL(&B);
 	cvtcil = !!B;
-	
+
 	B = 0;
 	diaSymbol->get_isMSILNetmodule(&B);
-	msil_netmodule = !!B;
-	
+	cil_netmodule = !!B;
+
 	D = 0;
 	diaSymbol->get_language(&D);
-	
+
 	static_assert(CV_CFL_HLSL == (DWORD)Language::HLSL, "Enum mismatch");
 	static_assert(CV_CFL_C == (DWORD)Language::C, "Enum mismatch");
 	language = (Language)D;
@@ -626,32 +617,32 @@ void Sym::Compiland::AppendDetails(IDiaSymbol* diaSymbol)
 	D = 0;
 	diaSymbol->get_platform(&D);
 	platform = (Sym::CPU) D;
-	
+
 	B = 0;
 	diaSymbol->get_hasSecurityChecks(&B);
 	security_check = !!B;
-	
+
 	B = 0;
 	diaSymbol->get_hasManagedCode(&B);
 	managed = !!B;
-	
+
 	D = 0;
 	diaSymbol->get_backEndQFE(&D);
 	backend_qfe = D;
-	
+
 	D = 0;
 	diaSymbol->get_frontEndQFE(&D);
 	frontend_qfe = D;
-	
+
 	B = 0;
 	diaSymbol->get_isSdl(&B);
 	sdl = !!B;
-	
+
 	B = 0;
 	diaSymbol->get_isPGO(&B);
 	pgo = !!B;
 }
- 
+
 Sym::Symbol::Symbol(IDiaSymbol* diaSymbol, unsigned long SymbolID, unsigned char SymTag)  noexcept
 {
 	symbol = SymbolID;
@@ -723,7 +714,7 @@ Sym::FunctionType::FunctionType(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  no
 
 	D = 0;
 	diaSymbol->get_typeId(&D);
-	type_symbol = D;
+	return_type_symbol = D;
 
 	LONG L = 0;
 	diaSymbol->get_thisAdjust(&L);
@@ -739,18 +730,18 @@ Sym::FunctionType::FunctionType(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  no
 
 	D = 0;
 	diaSymbol->get_callingConvention(&D);
-	call_convention = (Function::CallConv) D;
+	call_convention = (FunctionType::CallConv) D;
 
 }
 Sym::SrcRange::SrcRange(uint32_t id_, IDiaLineNumber* line)  noexcept
 {
 	DWORD D = 0;
 	BOOL B = false;
-	
+
 	id = id_;
 
 	line->get_compilandId(&D);
-	compiland = D;
+	compiland_symbol = D;
 
 	D = 0;
 	line->get_sourceFileId(&D);
@@ -771,7 +762,7 @@ Sym::SrcRange::SrcRange(uint32_t id_, IDiaLineNumber* line)  noexcept
 	D = 0;
 	line->get_columnNumberEnd(&D);
 	column_end = D;
-	
+
 	address.init(line);
 
 	D = 0;
@@ -846,7 +837,7 @@ Sym::UserType::UserType(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	else
 	{
 		aggregate_type = Aggregate::HOMOG_DOUBLE;
-	}	
+	}
 
 	diaSymbol->get_isRefUdt(&B);
 	semantics = Semantics::UNKNOWN;
@@ -904,26 +895,31 @@ Sym::UserType::UserType(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	unaligned = !!B;
 
 	DWORD D = 0;
-	CComPtr<IDiaSymbol> vtableshape = nullptr;
-	if (S_OK == diaSymbol->get_virtualTableShape(&vtableshape) && vtableshape)
+	//diaSymbol->get_virtualTableShapeId(&D);
+	//vtable_shape = D;
+
+	D = 0;
+	CComPtr<IDiaSymbol> vtable;
+	if (diaSymbol->get_virtualTableShape(&vtable) == S_OK)
 	{
-		vtableshape->get_count(&D);
+		vtable->get_count(&D);
 	}
-	vtable_size = D;
+	vtable_count = D;
 }
 Sym::Data::Data(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 {
 	CComVariant Val;
 	BOOL B;
 	diaSymbol->get_value((VARIANT*)&Val);
-	VariantChangeType(&Val, &Val, 0, VT_BSTR);
-	if (Val.vt == VT_BSTR)
+	//measurements suggest data are always number values
+	VariantChangeType(&Val, &Val, 0, VT_I8);
+	if (Val.vt == VT_I8)
 	{
-		value = wstrcvt((wchar_t*)Val.bstrVal);
+		value = Val.llVal;
 	}
 	symbol = symIndexId_;
 
-	DWORD D=0;
+	DWORD D = 0;
 	diaSymbol->get_dataKind(&D);
 	kind = (Kind)D;
 
@@ -937,7 +933,7 @@ Sym::Data::Data(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	{
 		address.init(diaSymbol);
 	}
-	
+
 	diaSymbol->get_registerId(&D);
 	register_id = D;
 
@@ -956,13 +952,13 @@ Sym::Label::Label(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	symbol = symIndexId_;
 	address.init(diaSymbol);
 }
-Sym::Callsite::Callsite(IDiaSession* , IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
+Sym::Callsite::Callsite(IDiaSession*, IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 {
 	symbol = symIndexId_;
-	
+
 	address.init(diaSymbol);
 
-	DWORD d=0;
+	DWORD d = 0;
 	diaSymbol->get_lexicalParentId(&d);
 	target_symbol = d;
 }
@@ -1047,7 +1043,7 @@ Sym::Pointer::Pointer(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	B = 0;
 	diaSymbol->get_isVirtualInheritance(&B);
 	virtual_inheritance = !!B;
-	
+
 	D = 0;
 	diaSymbol->get_unmodifiedTypeId(&D);
 	unmodified_type_symbol = D;
@@ -1076,7 +1072,7 @@ Sym::InjectedSource::InjectedSource(IDiaInjectedSource* src)  noexcept
 	src->get_length(&L);
 	length = L;
 
-	BYTE buf[256] ;
+	BYTE buf[256];
 	DWORD num = 0;
 	src->get_source(255, &num, buf);
 	buf[num] = 0;
@@ -1160,6 +1156,42 @@ Sym::Frame::Frame(IDiaFrameData* frame)  noexcept
 
 }
 
+Sym::VTablePtr::VTablePtr(IDiaSymbol* diaSymbol, uint32_t symIndexId) noexcept
+{
+	DWORD D = 0;
+	BOOL B = 0;
+	LONG L = 0;
+
+	/*
+	these appear to always return 0/false
+	diaSymbol->get_constType(&B);
+	const_ = !!B;
+
+	diaSymbol->get_volatileType(&B);
+	volatile_ = !!B;
+
+	diaSymbol->get_unalignedType(&B);
+	unaligned = !!B;
+
+	diaSymbol->get_constantExport(&B);
+	const_export = !!B;
+	*/
+
+	diaSymbol->get_typeId(&D);
+	type_symbol = D;
+
+	symbol = symIndexId;
+
+}
+
+
+Sym::Friend::Friend(IDiaSymbol* diaSymbol, uint32_t symIndexId) noexcept
+{
+	symbol = symIndexId;
+	DWORD D = 0;
+	diaSymbol->get_typeId(&D);
+	type_symbol = D;
+}
 class Dia2SymbolProvider
 {
 	SymbolData& Result;
@@ -1168,9 +1200,9 @@ class Dia2SymbolProvider
 
 	void ReadSections(IDiaEnumDebugStreamData* enumSectionHeaders)
 	{
-		int section_index=1;
+		int section_index = 1;
 
-		while(true)
+		while (true)
 		{
 			ULONG numFetched = 1;
 			DWORD bytesRead = 0;
@@ -1178,34 +1210,34 @@ class Dia2SymbolProvider
 			memset(&imageSectionHeader, 0, sizeof(imageSectionHeader));
 
 			enumSectionHeaders->Next(numFetched, sizeof(imageSectionHeader), &bytesRead, (BYTE*)&imageSectionHeader, &numFetched);
-			if (numFetched < 1 || bytesRead != sizeof(imageSectionHeader) )
+			if (numFetched < 1 || bytesRead != sizeof(imageSectionHeader))
 				break;
 
-				Sym::AddrSection s;
-				for (int i=0; i<ARRAYSIZE(imageSectionHeader.Name); ++i)
+			Sym::AddrSection s;
+			for (int i = 0; i<ARRAYSIZE(imageSectionHeader.Name); ++i)
+			{
+				if (imageSectionHeader.Name[i] != '\0')
 				{
-					if (imageSectionHeader.Name[i] != '\0')
-					{
-						s.name += (char) imageSectionHeader.Name[i];
-					}
-					else
-					{
-						break;
-					}
+					s.name += (char)imageSectionHeader.Name[i];
 				}
+				else
+				{
+					break;
+				}
+			}
 
-				s.section_index = section_index;
-				s.line_numbers = imageSectionHeader.NumberOfLinenumbers;
-				s.size = imageSectionHeader.SizeOfRawData;
-				s.relocations = imageSectionHeader.NumberOfRelocations;
-				s.comdat = (imageSectionHeader.Characteristics & IMAGE_SCN_LNK_COMDAT) != 0;
-				s.readable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_READ) != 0;
-				s.writable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_WRITE) != 0;
-				s.executable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
-				s.discardable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) != 0;
-				Result.AddrSection.push_back(s);
+			s.section_index = section_index;
+			s.line_numbers = imageSectionHeader.NumberOfLinenumbers;
+			s.size = imageSectionHeader.SizeOfRawData;
+			s.relocations = imageSectionHeader.NumberOfRelocations;
+			s.comdat = (imageSectionHeader.Characteristics & IMAGE_SCN_LNK_COMDAT) != 0;
+			s.readable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_READ) != 0;
+			s.writable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_WRITE) != 0;
+			s.executable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
+			s.discardable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) != 0;
+			Result.AddrSection.push_back(s);
 
-				++section_index;
+			++section_index;
 		}
 	}
 
@@ -1241,7 +1273,7 @@ class Dia2SymbolProvider
 			{
 				CComPtr<IDiaSymbol> compilands[64];
 				DWORD fetched = 0;
-				if(enumerate_compilands->Next(64, &compilands[0], &fetched) == S_OK)
+				if (enumerate_compilands->Next(64, &compilands[0], &fetched) == S_OK)
 				{
 					for (DWORD i = 0; i < fetched; ++i)
 					{
@@ -1261,9 +1293,11 @@ class Dia2SymbolProvider
 	{
 		DWORD symIndexId = 0;
 		diaSymbol->get_symIndexId(&symIndexId);
-		
+
 		DWORD SymTag = 0;
 		diaSymbol->get_symTag(&SymTag);
+
+		Result.Symbol.emplace_back(diaSymbol, symIndexId, (unsigned char)SymTag);
 
 		switch (SymTag)
 		{
@@ -1285,13 +1319,13 @@ class Dia2SymbolProvider
 		case SymTagBaseType:			Result.BuiltinType.emplace_back(diaSymbol, symIndexId);				break;
 		case SymTagTypedef:				Result.Typedef.emplace_back(diaSymbol, symIndexId);					break;
 		case SymTagBaseClass:			Result.BaseClass.emplace_back(diaSymbol);							break;
-		case SymTagFriend:																					break;
+		case SymTagFriend:				Result.Friend.emplace_back(diaSymbol, symIndexId);					break;
 		case SymTagFunctionArgType:		Result.FunctionArg.emplace_back(diaSymbol, symIndexId);				break;
 		case SymTagFuncDebugStart:																			break;
 		case SymTagFuncDebugEnd:																			break;
 		case SymTagUsingNamespace:																			break;
 		case SymTagVTableShape:																				break;
-		case SymTagVTable:																					break;
+		case SymTagVTable:				Result.VTablePtr.emplace_back(diaSymbol, symIndexId);				break;
 		case SymTagCustom:																					break;
 		case SymTagThunk:				Result.Thunk.emplace_back(Provider.session, diaSymbol, symIndexId);	break;
 		case SymTagCustomType:																				break;
@@ -1310,9 +1344,9 @@ class Dia2SymbolProvider
 		case SymTagCoffGroup:																				break;
 		}
 
-		Result.Symbol.emplace_back(diaSymbol, symIndexId, (unsigned char)SymTag);
+
 	}
-	
+
 	void ReadUDTSymbol(IDiaSymbol* diaSymbol, uint32_t symIndexId_)
 	{
 		Result.UserType.emplace_back(diaSymbol, symIndexId_);
@@ -1332,7 +1366,7 @@ class Dia2SymbolProvider
 		Sym::Compiland& Item = Result.Compiland[SymCompilandMap[Compiland]];
 		Item.AppendDetails(diaSymbol);
 	}
-	void ReadCompilandSymbol(IDiaSymbol* diaSymbol,  uint32_t symIndexId_)
+	void ReadCompilandSymbol(IDiaSymbol* diaSymbol, uint32_t symIndexId_)
 	{
 		SymCompilandMap[symIndexId_] = static_cast<unsigned int>(Result.Compiland.size());
 		Result.Compiland.emplace_back(diaSymbol, symIndexId_);
@@ -1362,7 +1396,7 @@ public:
 
 	void ReadSymbols()
 	{
-
+		no_addresses = getFlag("-noaddress");
 		Result.Symbol.emplace_back();
 		ReadStreams(Provider.session);
 		DIA2::ReadTables(Provider.session,
@@ -1372,7 +1406,7 @@ public:
 			ReadSymbolHelper(*this),
 			Result.ReadSegment(),
 			Result.ReadInputAssembly(),
-			Result.ReadFrame()	);
+			Result.ReadFrame());
 	}
 };
 namespace DIA2

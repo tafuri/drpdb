@@ -127,7 +127,7 @@ namespace ODBC
 
 		void Send()
 		{
-#define BEGIN_STRUCT(type, name) BuildTable(Results.type, #name );
+#define BEGIN_STRUCT(type, name, desc,category) BuildTable(Results.type, #name );
 
 #include "PDBReflection.inl"
 

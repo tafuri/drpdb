@@ -32,8 +32,8 @@ namespace CSV
 		void AppendHeader(std::string table, std::string& out)
 		{
 
-	#define BEGIN_STRUCT(type, name) if (table == #name ){ out += 
-	#define MEMBER(name)  #name ","
+#define BEGIN_STRUCT(type, name, desc, category) if (table == #name ){ out += 
+	#define MEMBER(name, desc)  #name ","
 	#define END_STRUCT()  ; if (out.back() == ',') out.pop_back(); out+="\n";}
 
 	#include "PDBReflection.inl"
@@ -75,7 +75,7 @@ namespace CSV
 
 		void GenerateCommands()
 		{
-	#define BEGIN_STRUCT(type, name) BuildTable(Results.type, #name );
+#define BEGIN_STRUCT(type, name, desc, category) BuildTable(Results.type, #name );
 
 	#include "PDBReflection.inl"
 
@@ -114,6 +114,13 @@ namespace CSV
 		_snprintf_s(Buf, 64, "%llu", V);
 		out += Buf;
 		out += ",";
+	}
+	void writer::operator<<(long long V)
+	{
+		char Buf[64];
+		_snprintf_s(Buf, 64, "%lld", V);
+		out += Buf;
+		out += ',';
 	}
 	void writer::operator<<(long V)
 	{

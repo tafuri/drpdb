@@ -62,6 +62,7 @@ std::vector<OutputEngine> gEngines;
 namespace ODBC { OutputEngine CreateEngine(); }
 namespace MySQL { OutputEngine CreateEngine(); }
 namespace CSV { OutputEngine CreateEngine(); }
+namespace WikiDoc { void Output(const char* filename); }
 
 void init_engines()
 {
@@ -129,11 +130,7 @@ int main(int argc, char** argv)
 	{
 		*path_term = 0;
 	}
-	if (!SetCurrentDirectoryA(path))
-	{
-		bool a = 0;
-		a = 1;
-	}
+	SetCurrentDirectoryA(path);
 
 	init_engines();
 	SymbolData S;
@@ -147,6 +144,12 @@ int main(int argc, char** argv)
 	if (getFlag("-doc"))
 	{
 		DIA2::Document();
+		return 0;
+	}
+	auto wikidoc_filename = getOption("-wikidoc");
+	if (wikidoc_filename.size() > 0)
+	{
+		WikiDoc::Output(wikidoc_filename.c_str());
 		return 0;
 	}
 	if (!output)
