@@ -125,7 +125,7 @@ namespace
 			UploadCommands.push_back(Cmd);
 		}
 		template<class T>
-		void CreateTable(std::string tablename, std::string& EndClause)
+		void CreateTable(std::string tablename, std::string& EndClause, const char* desc)
 		{
 			T Value;
 			UploadCommands.push_back(std::string("DROP TABLE IF EXISTS ") + tablename + ";");
@@ -140,7 +140,12 @@ namespace
 			{
 				Ar.Result.pop_back();
 			}
-			Ar.Result += ") Engine=MyISAM;";
+			Ar.Result += ") Engine=MyISAM";
+			Ar.Result += " COMMENT='";
+			std::string temp_desc = desc;
+			temp_desc = replace(temp_desc, "'", "''");
+			Ar.Result += temp_desc;
+			Ar.Result += "';";
 			UploadCommands.push_back(Ar.Result);
 
 			Ar.LoadClause.pop_back();
@@ -164,19 +169,19 @@ namespace
 		}
 
 		template<class T>
-		void BuildTable(const std::vector<T>& Table, const std::string& name)
+		void BuildTable(const std::vector<T>& Table, const std::string& name, const char* desc)
 		{
 			std::string EndClause;
-			CreateTable<T>(name, EndClause);
+			CreateTable<T>(name, EndClause, desc);
 			PopulateTable(Table.begin(), Table.end(), name);
 			LoadTable(name, EndClause);
 		}
 
 		template<class U, class T>
-		void BuildTable(const std::unordered_map<U, T>& Table, const std::string& name)
+		void BuildTable(const std::unordered_map<U, T>& Table, const std::string& name, const char* desc)
 		{
 			std::string EndClause;
-			CreateTable<T>(name, EndClause);
+			CreateTable<T>(name, EndClause, desc);
 
 			if (Results.Populate)
 			{
@@ -220,7 +225,7 @@ namespace
 		void GenerateCommands()
 		{
 			GenerateProcedures();
-#define BEGIN_STRUCT(type, name, desc,category) BuildTable(Results.type, #name );
+#define BEGIN_STRUCT(type, name, desc,category) BuildTable(Results.type, #name, desc );
 
 #include "PDBReflection.inl"
 		}

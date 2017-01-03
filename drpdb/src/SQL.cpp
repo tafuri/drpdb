@@ -1,6 +1,6 @@
 #include "drpdb.h"
 #include "SQLSchemaWriter.h"
-
+#include "stringutils.h"
 namespace SQL
 {
 	schema_writer::schema_writer(bool UseBitType_)
@@ -11,13 +11,13 @@ namespace SQL
 			LoadClause = " (";
 		}
 	}
-	void schema_writer::column_desc(DBKeyType type, const char* name)
+	void schema_writer::column_desc(db_index type, const char* name)
 	{
-		if (type == DBKeyType::PRIMARYKEY)
+		if (type == db_index::PRIMARYKEY)
 		{
 			Keys += "PRIMARY ";
 		}
-		if (type != DBKeyType::NOTKEY)
+		if (type != db_index::NOTKEY)
 		{
 			Keys += "KEY (";
 			Keys += name;
@@ -32,35 +32,44 @@ namespace SQL
 		}
 
 	}
+	static void column_comment(const char* comment, std::string& out)
+	{
+		out += " COMMENT '";
+		std::string temp = comment;
+		temp = replace(temp, "'", "''");
+		out += temp;
+		out += "',";
+	}
 	void schema_writer::operator<<(const char* V) { Result += V; }
-	void schema_writer::operator<<(cell<float> V) { column_desc(V.Keyness, V.Name);	Result += " FLOAT NOT NULL,"; }
-	void schema_writer::operator<<(cell<int> V) { column_desc(V.Keyness, V.Name);	Result += " INT NOT NULL,"; }
-	void schema_writer::operator<<(cell<uint32_t> V) { column_desc(V.Keyness, V.Name);	Result += " INT UNSIGNED NOT NULL,"; }
-	void schema_writer::operator<<(cell<long> V) { column_desc(V.Keyness, V.Name);	Result += " BIGINT NOT NULL,"; }
-	void schema_writer::operator<<(cell<unsigned long> V) { column_desc(V.Keyness, V.Name);	Result += " INT UNSIGNED NOT NULL,"; }
-	void schema_writer::operator<<(cell<unsigned long long> V) { column_desc(V.Keyness, V.Name);	Result += " BIGINT UNSIGNED NOT NULL,"; }
-	void schema_writer::operator<<(cell<std::string> V) { column_desc(V.Keyness, V.Name);	Result += " VARCHAR(2047) NOT NULL,"; }
-	void schema_writer::operator<<(cell<unsigned char> V) { column_desc(V.Keyness, V.Name); Result += " INT(3) UNSIGNED NOT NULL, "; }
-	void schema_writer::operator<<(cell<long long> V) { column_desc(V.Keyness, V.Name); Result += " BIGINT NOT NULL, "; }
+	void schema_writer::operator<<(cell<float> V) {	column_desc(V.index_type, V.name);	Result += " FLOAT NOT NULL"; column_comment(V.desc, Result);	}
+	void schema_writer::operator<<(cell<int> V) { column_desc(V.index_type, V.name);	Result += " INT NOT NULL"; column_comment(V.desc, Result); }
+	void schema_writer::operator<<(cell<uint32_t> V) { column_desc(V.index_type, V.name);	Result += " INT UNSIGNED NOT NULL"; column_comment(V.desc, Result); }
+	void schema_writer::operator<<(cell<long> V) { column_desc(V.index_type, V.name);	Result += " BIGINT NOT NULL"; column_comment(V.desc, Result); }
+	void schema_writer::operator<<(cell<unsigned long> V) { column_desc(V.index_type, V.name);	Result += " INT UNSIGNED NOT NULL"; column_comment(V.desc, Result); }
+	void schema_writer::operator<<(cell<unsigned long long> V) { column_desc(V.index_type, V.name);	Result += " BIGINT UNSIGNED NOT NULL"; column_comment(V.desc, Result); }
+	void schema_writer::operator<<(cell<std::string> V) { column_desc(V.index_type, V.name);	Result += " VARCHAR(2047) NOT NULL"; column_comment(V.desc, Result); }
+	void schema_writer::operator<<(cell<unsigned char> V) { column_desc(V.index_type, V.name); Result += " INT(3) UNSIGNED NOT NULL"; column_comment(V.desc, Result); }
+	void schema_writer::operator<<(cell<long long> V) { column_desc(V.index_type, V.name); Result += " BIGINT NOT NULL"; column_comment(V.desc, Result); }
 	void schema_writer::operator<<(cell<Sym::address_info> V)
 	{
-		std::string name = V.Name;
+		std::string name = V.name;
 		name += "_";
 		std::string temp = name;
-		*this << cell<decltype(Sym::address_info::rv)>{(temp + "rv").c_str(), DBKeyType::NOTKEY};
+		*this << cell<decltype(Sym::address_info::rv)>{(temp + "rv").c_str(), db_index::NOTKEY, V.desc};
 
 	}
 	void schema_writer::operator<<(cell<bool> V)
 	{
 		Result += " ";
-		Result += V.Name;
+		Result += V.name;
 
 		if (UseBitType)
 		{
-			Result += " BIT(1) NOT NULL,";
+			Result += " BIT(1) NOT NULL";
+			column_comment(V.desc, Result);
 
 			LoadClause += "@tmp_";
-			LoadClause += V.Name;
+			LoadClause += V.name;
 			LoadClause += ",";
 
 
@@ -72,14 +81,15 @@ namespace SQL
 			{
 				SetClause += ", ";
 			}
-			SetClause += V.Name;
+			SetClause += V.name;
 			SetClause += "= CAST(@tmp_";
-			SetClause += V.Name;
+			SetClause += V.name;
 			SetClause += " AS UNSIGNED)";
 		}
 		else
 		{
-			Result += " BOOLEAN,";
+			Result += " BOOLEAN";
+			column_comment(V.desc, Result);
 		}
 
 	}

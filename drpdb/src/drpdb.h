@@ -2,17 +2,13 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <locale>
-#include <codecvt>
 #include <iostream>
 #include <memory>
-#include <fstream>
 #include <functional>
 #undef VOID
 #undef INTERFACE
 #undef PASCAL
 
-#define UNREACHABLE_CODE __assume(0)
 struct IDiaSymbol;
 struct IDiaLineNumber;
 struct IDiaSourceFile;
@@ -840,7 +836,7 @@ inline std::string wstrcvt(const wchar_t* s)
 		return Result;
 	auto n = wcslen(s);
 	Result.reserve(n);
-	Result.insert(0, n, ' ');
+	Result.insert(0, n, 0);
 	auto d = Result.begin();
 	for (auto i = 0; i < n; ++i)
 	{

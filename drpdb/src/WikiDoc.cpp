@@ -1,4 +1,5 @@
 #include "drpdb.h"
+#include <fstream>
 namespace
 {
 	struct folio
