@@ -10,7 +10,7 @@ Graph of all typedefs
 
 ![drpdb_ex1](https://cloud.githubusercontent.com/assets/13194087/21583388/270c8b9e-d044-11e6-9aeb-cf17db8343de.png)
 
-#include graph (make_include_graph)
+.cpp/.h include graph (make_include_graph)
 ![drpdb_ex2](https://cloud.githubusercontent.com/assets/13194087/21599746/413f05a2-d137-11e6-9467-53ab64c3518b.png)
 
 Class hierarchy of a portion of VC++'s standard library (make_inheritance_graph)
