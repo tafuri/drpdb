@@ -1,8 +1,8 @@
 DROP PROCEDURE IF EXISTS types_by_vtable_size;
 #then_execute
-CREATE DEFINER=`root`@`localhost` PROCEDURE `types_by_vtable_size`()
+CREATE PROCEDURE `types_by_vtable_size`()
 	LANGUAGE SQL
-	NOT DETERMINISTIC
+	DETERMINISTIC
 	CONTAINS SQL
 	SQL SECURITY DEFINER
 	COMMENT ''

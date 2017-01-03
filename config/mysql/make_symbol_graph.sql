@@ -1,6 +1,6 @@
 DROP PROCEDURE IF EXISTS make_symbol_graph;
 #then_execute
-CREATE DEFINER=`root`@`localhost` PROCEDURE `make_symbol_graph`()
+CREATE  PROCEDURE `make_symbol_graph`()
 	LANGUAGE SQL
 	DETERMINISTIC
 	CONTAINS SQL

@@ -1,6 +1,6 @@
 DROP PROCEDURE IF EXISTS make_typedef_graph;
 #then_execute
-CREATE DEFINER=`root`@`localhost` PROCEDURE `make_typedef_graph`()
+CREATE PROCEDURE `make_typedef_graph`()
 	LANGUAGE SQL
 	DETERMINISTIC
 	CONTAINS SQL

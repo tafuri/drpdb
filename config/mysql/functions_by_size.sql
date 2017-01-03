@@ -1,6 +1,6 @@
 DROP PROCEDURE IF EXISTS functions_by_size;
 #then_execute
-CREATE DEFINER=`root`@`localhost` PROCEDURE `functions_by_size`()
+CREATE  PROCEDURE `functions_by_size`()
 	LANGUAGE SQL
 	NOT DETERMINISTIC
 	CONTAINS SQL
