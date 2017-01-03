@@ -7,5 +7,5 @@ CREATE PROCEDURE `types_by_vtable_size`()
 	SQL SECURITY DEFINER
 	COMMENT ''
 BEGIN
-select symbols.*, usertypes.vtable_size from usertypes natural join symbols order by vtable_size desc;
+select symbols.*, user_types.vtable_count from user_types natural join symbols order by vtable_count desc;
 END
