@@ -3,6 +3,7 @@ Convert from Microsoft PDB format into a MySQL database
 
 See the wiki page for documentation
 
+##Examples
 The following graphs/tables were created by running drpdb on itself. Graphs were generated using gephi.
 
 Graph of all typedefs
