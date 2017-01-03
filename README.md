@@ -6,6 +6,9 @@ See the wiki page for documentation
 ##Examples
 The following graphs/tables were created by running drpdb on itself. Graphs were generated using gephi.
 
+Browsing a small subset of information about the functions in our program (function_overview)
+![drpdb_ex4](https://cloud.githubusercontent.com/assets/13194087/21600363/9e478220-d140-11e6-8568-960ebf73525d.png)
+
 Graph of all typedefs
 ![drpdb_ex3](https://cloud.githubusercontent.com/assets/13194087/21599994/33237a9e-d13b-11e6-9808-7e1ec754f028.png)
 
@@ -17,5 +20,3 @@ Graph of all typedefs
 Class hierarchy of a portion of VC++'s standard library (make_inheritance_graph)
 ![drpdb_ex2](https://cloud.githubusercontent.com/assets/13194087/21599898/64bf516a-d139-11e6-8966-2d3cd6e3a065.png)
 
-Browsing a small subset of information about the functions in our program (function_overview)
-![drpdb_ex4](https://cloud.githubusercontent.com/assets/13194087/21600363/9e478220-d140-11e6-8568-960ebf73525d.png)
