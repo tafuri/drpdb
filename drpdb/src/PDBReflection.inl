@@ -202,7 +202,7 @@ BEGIN_STRUCT(SrcRange, src_lines, "Used to map symbols to the location they occu
 	MEMBER(line_begin, "Beginning line number")
 	MEMBER(line_end, "Ending line number (or 0)")
 	MEMBER(column_begin, "Beginning column number (or 0)")
-	MEMBER(column_end, "Engine column number (or 0)")
+	MEMBER(column_end, "Ending column number (or 0)")
 	MEMBER(address, "Corresponding address of the source line")
 	MEMBER(length, "Length of the line")
 	MEMBER(statement, "Is a statement")
