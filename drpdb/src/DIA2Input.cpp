@@ -895,8 +895,8 @@ Sym::UserType::UserType(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	unaligned = !!B;
 
 	DWORD D = 0;
-	//diaSymbol->get_virtualTableShapeId(&D);
-	//vtable_shape = D;
+	diaSymbol->get_virtualTableShapeId(&D);
+	vtable_shape = D;
 
 	D = 0;
 	CComPtr<IDiaSymbol> vtable;
@@ -916,6 +916,18 @@ Sym::Data::Data(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 	if (Val.vt == VT_I8)
 	{
 		value = Val.llVal;
+	}
+	else if (Val.vt == VT_I4)
+	{
+		value = Val.lVal;
+	}
+	else if (Val.vt == VT_R4)
+	{
+		value = Val.fltVal;
+	}
+	else if (Val.vt == VT_R8)
+	{
+		value = Val.dblVal;
 	}
 	symbol = symIndexId_;
 
