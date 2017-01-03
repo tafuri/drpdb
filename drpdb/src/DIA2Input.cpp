@@ -1192,223 +1192,227 @@ Sym::Friend::Friend(IDiaSymbol* diaSymbol, uint32_t symIndexId) noexcept
 	diaSymbol->get_typeId(&D);
 	type_symbol = D;
 }
-class Dia2SymbolProvider
+namespace
 {
-	SymbolData& Result;
-
-	std::unordered_map<DWORD, unsigned int> SymCompilandMap;
-
-	void ReadSections(IDiaEnumDebugStreamData* enumSectionHeaders)
+	class Dia2SymbolProvider
 	{
-		int section_index = 1;
+		SymbolData& Result;
 
-		while (true)
+		std::unordered_map<DWORD, unsigned int> SymCompilandMap;
+
+		void ReadSections(IDiaEnumDebugStreamData* enumSectionHeaders)
 		{
-			ULONG numFetched = 1;
-			DWORD bytesRead = 0;
-			IMAGE_SECTION_HEADER imageSectionHeader;
-			memset(&imageSectionHeader, 0, sizeof(imageSectionHeader));
+			int section_index = 1;
 
-			enumSectionHeaders->Next(numFetched, sizeof(imageSectionHeader), &bytesRead, (BYTE*)&imageSectionHeader, &numFetched);
-			if (numFetched < 1 || bytesRead != sizeof(imageSectionHeader))
-				break;
-
-			Sym::AddrSection s;
-			for (int i = 0; i<ARRAYSIZE(imageSectionHeader.Name); ++i)
-			{
-				if (imageSectionHeader.Name[i] != '\0')
-				{
-					s.name += (char)imageSectionHeader.Name[i];
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			s.section_index = section_index;
-			s.line_numbers = imageSectionHeader.NumberOfLinenumbers;
-			s.size = imageSectionHeader.SizeOfRawData;
-			s.relocations = imageSectionHeader.NumberOfRelocations;
-			s.comdat = (imageSectionHeader.Characteristics & IMAGE_SCN_LNK_COMDAT) != 0;
-			s.readable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_READ) != 0;
-			s.writable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_WRITE) != 0;
-			s.executable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
-			s.discardable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) != 0;
-			Result.AddrSection.push_back(s);
-
-			++section_index;
-		}
-	}
-
-	void ReadStreams(IDiaSession* session)
-	{
-		CComPtr<IDiaEnumDebugStreams> streamEnum = nullptr;
-		session->getEnumDebugStreams(&streamEnum);
-		while (streamEnum)
-		{
-			ULONG numFetched = 1;
-			CComPtr<IDiaEnumDebugStreamData> enumStreamData = nullptr;
-			streamEnum->Next(numFetched, &enumStreamData, &numFetched);
-			if (enumStreamData == nullptr || numFetched < 1)
-				break;
-			CComBSTR enumDataName;
-			enumStreamData->get_name(&enumDataName);
-			if (wcscmp(enumDataName, L"SECTIONHEADERS") == 0)
-			{
-				ReadSections(enumStreamData);
-			}
-		}
-	}
-
-	void ReadSource(IDiaSourceFile* item)
-	{
-		Result.SourceFile.emplace_back(item);
-		DWORD file_id = 0;
-		item->get_uniqueId(&file_id);
-		CComPtr<IDiaEnumSymbols> enumerate_compilands = nullptr;
-		if (item->get_compilands(&enumerate_compilands) == S_OK)
-		{
 			while (true)
 			{
-				CComPtr<IDiaSymbol> compilands[64];
-				DWORD fetched = 0;
-				if (enumerate_compilands->Next(64, &compilands[0], &fetched) == S_OK)
+				ULONG numFetched = 1;
+				DWORD bytesRead = 0;
+				IMAGE_SECTION_HEADER imageSectionHeader;
+				memset(&imageSectionHeader, 0, sizeof(imageSectionHeader));
+
+				enumSectionHeaders->Next(numFetched, sizeof(imageSectionHeader), &bytesRead, (BYTE*)&imageSectionHeader, &numFetched);
+				if (numFetched < 1 || bytesRead != sizeof(imageSectionHeader))
+					break;
+
+				Sym::AddrSection s;
+				for (int i = 0; i<ARRAYSIZE(imageSectionHeader.Name); ++i)
 				{
-					for (DWORD i = 0; i < fetched; ++i)
+					if (imageSectionHeader.Name[i] != '\0')
 					{
-						DWORD compiland_id = 0;
-						compilands[i]->get_symIndexId(&compiland_id);
-						Result.Included.emplace_back(compiland_id, file_id);
+						s.name += (char)imageSectionHeader.Name[i];
+					}
+					else
+					{
+						break;
 					}
 				}
-				else
-				{
+
+				s.section_index = section_index;
+				s.line_numbers = imageSectionHeader.NumberOfLinenumbers;
+				s.size = imageSectionHeader.SizeOfRawData;
+				s.relocations = imageSectionHeader.NumberOfRelocations;
+				s.comdat = (imageSectionHeader.Characteristics & IMAGE_SCN_LNK_COMDAT) != 0;
+				s.readable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_READ) != 0;
+				s.writable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_WRITE) != 0;
+				s.executable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
+				s.discardable = (imageSectionHeader.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) != 0;
+				Result.AddrSection.push_back(s);
+
+				++section_index;
+			}
+		}
+
+		void ReadStreams(IDiaSession* session)
+		{
+			CComPtr<IDiaEnumDebugStreams> streamEnum = nullptr;
+			session->getEnumDebugStreams(&streamEnum);
+			while (streamEnum)
+			{
+				ULONG numFetched = 1;
+				CComPtr<IDiaEnumDebugStreamData> enumStreamData = nullptr;
+				streamEnum->Next(numFetched, &enumStreamData, &numFetched);
+				if (enumStreamData == nullptr || numFetched < 1)
 					break;
+				CComBSTR enumDataName;
+				enumStreamData->get_name(&enumDataName);
+				if (wcscmp(enumDataName, L"SECTIONHEADERS") == 0)
+				{
+					ReadSections(enumStreamData);
 				}
 			}
 		}
-	}
-	void ReadSymbol(IDiaSymbol* diaSymbol)
-	{
-		DWORD symIndexId = 0;
-		diaSymbol->get_symIndexId(&symIndexId);
 
-		DWORD SymTag = 0;
-		diaSymbol->get_symTag(&SymTag);
-
-		Result.Symbol.emplace_back(diaSymbol, symIndexId, (unsigned char)SymTag);
-
-		switch (SymTag)
+		void ReadSource(IDiaSourceFile* item)
 		{
-		case SymTagExe:					Result.Exe.emplace_back(diaSymbol);									break;
-		case SymTagCompiland:			ReadCompilandSymbol(diaSymbol, symIndexId);							break;
-		case SymTagCompilandDetails:	ReadCompilandDetailsSymbol(diaSymbol);								break;
-		case SymTagCompilandEnv:		Result.CompilandEnv.emplace_back(diaSymbol);						break;
-		case SymTagFunction:			Result.Function.emplace_back(diaSymbol, symIndexId);				break;
-		case SymTagBlock:				Result.Block.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagData:				Result.Data.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagAnnotation:																				break;
-		case SymTagLabel:				Result.Label.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagPublicSymbol:		Result.PublicSymbol.emplace_back(diaSymbol, symIndexId);			break;
-		case SymTagUDT:					ReadUDTSymbol(diaSymbol, symIndexId);								break;
-		case SymTagEnum:				Result.Enum.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagFunctionType:		Result.FunctionType.emplace_back(diaSymbol, symIndexId);			break;
-		case SymTagPointerType:			Result.Pointer.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagArrayType:			Result.Array.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagBaseType:			Result.BuiltinType.emplace_back(diaSymbol, symIndexId);				break;
-		case SymTagTypedef:				Result.Typedef.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagBaseClass:			Result.BaseClass.emplace_back(diaSymbol);							break;
-		case SymTagFriend:				Result.Friend.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagFunctionArgType:		Result.FunctionArg.emplace_back(diaSymbol, symIndexId);				break;
-		case SymTagFuncDebugStart:																			break;
-		case SymTagFuncDebugEnd:																			break;
-		case SymTagUsingNamespace:																			break;
-		case SymTagVTableShape:																				break;
-		case SymTagVTable:				Result.VTablePtr.emplace_back(diaSymbol, symIndexId);				break;
-		case SymTagCustom:																					break;
-		case SymTagThunk:				Result.Thunk.emplace_back(Provider.session, diaSymbol, symIndexId);	break;
-		case SymTagCustomType:																				break;
-		case SymTagManagedType:																				break;
-		case SymTagDimension:																				break;
-		case SymTagCallSite:			Result.Callsite.emplace_back(Provider.session, diaSymbol, symIndexId);		break;
-		case SymTagInlineSite:			Result.Inlined.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagBaseInterface:																			break;
-		case SymTagVectorType:																				break;
-		case SymTagMatrixType:																				break;
-		case SymTagHLSLType:																				break;
-		case SymTagCaller:																					break;
-		case SymTagCallee:																					break;
-		case SymTagExport:				Result.Export.emplace_back(diaSymbol, symIndexId);					break;
-		case SymTagHeapAllocationSite:	Result.HeapAllocation.emplace_back(diaSymbol, symIndexId);			break;
-		case SymTagCoffGroup:																				break;
+			Result.SourceFile.emplace_back(item);
+			DWORD file_id = 0;
+			item->get_uniqueId(&file_id);
+			CComPtr<IDiaEnumSymbols> enumerate_compilands = nullptr;
+			if (item->get_compilands(&enumerate_compilands) == S_OK)
+			{
+				while (true)
+				{
+					CComPtr<IDiaSymbol> compilands[64];
+					DWORD fetched = 0;
+					if (enumerate_compilands->Next(64, &compilands[0], &fetched) == S_OK)
+					{
+						for (DWORD i = 0; i < fetched; ++i)
+						{
+							DWORD compiland_id = 0;
+							compilands[i]->get_symIndexId(&compiland_id);
+							Result.Included.emplace_back(compiland_id, file_id);
+						}
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+		}
+		void ReadSymbol(IDiaSymbol* diaSymbol)
+		{
+			DWORD symIndexId = 0;
+			diaSymbol->get_symIndexId(&symIndexId);
+
+			DWORD SymTag = 0;
+			diaSymbol->get_symTag(&SymTag);
+
+			Result.Symbol.emplace_back(diaSymbol, symIndexId, (unsigned char)SymTag);
+
+			switch (SymTag)
+			{
+			case SymTagExe:					Result.Exe.emplace_back(diaSymbol);									break;
+			case SymTagCompiland:			ReadCompilandSymbol(diaSymbol, symIndexId);							break;
+			case SymTagCompilandDetails:	ReadCompilandDetailsSymbol(diaSymbol);								break;
+			case SymTagCompilandEnv:		Result.CompilandEnv.emplace_back(diaSymbol);						break;
+			case SymTagFunction:			Result.Function.emplace_back(diaSymbol, symIndexId);				break;
+			case SymTagBlock:				Result.Block.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagData:				Result.Data.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagAnnotation:																				break;
+			case SymTagLabel:				Result.Label.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagPublicSymbol:		Result.PublicSymbol.emplace_back(diaSymbol, symIndexId);			break;
+			case SymTagUDT:					ReadUDTSymbol(diaSymbol, symIndexId);								break;
+			case SymTagEnum:				Result.Enum.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagFunctionType:		Result.FunctionType.emplace_back(diaSymbol, symIndexId);			break;
+			case SymTagPointerType:			Result.Pointer.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagArrayType:			Result.Array.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagBaseType:			Result.BuiltinType.emplace_back(diaSymbol, symIndexId);				break;
+			case SymTagTypedef:				Result.Typedef.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagBaseClass:			Result.BaseClass.emplace_back(diaSymbol);							break;
+			case SymTagFriend:				Result.Friend.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagFunctionArgType:		Result.FunctionArg.emplace_back(diaSymbol, symIndexId);				break;
+			case SymTagFuncDebugStart:																			break;
+			case SymTagFuncDebugEnd:																			break;
+			case SymTagUsingNamespace:																			break;
+			case SymTagVTableShape:																				break;
+			case SymTagVTable:				Result.VTablePtr.emplace_back(diaSymbol, symIndexId);				break;
+			case SymTagCustom:																					break;
+			case SymTagThunk:				Result.Thunk.emplace_back(Provider.session, diaSymbol, symIndexId);	break;
+			case SymTagCustomType:																				break;
+			case SymTagManagedType:																				break;
+			case SymTagDimension:																				break;
+			case SymTagCallSite:			Result.Callsite.emplace_back(Provider.session, diaSymbol, symIndexId);		break;
+			case SymTagInlineSite:			Result.Inlined.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagBaseInterface:																			break;
+			case SymTagVectorType:																				break;
+			case SymTagMatrixType:																				break;
+			case SymTagHLSLType:																				break;
+			case SymTagCaller:																					break;
+			case SymTagCallee:																					break;
+			case SymTagExport:				Result.Export.emplace_back(diaSymbol, symIndexId);					break;
+			case SymTagHeapAllocationSite:	Result.HeapAllocation.emplace_back(diaSymbol, symIndexId);			break;
+			case SymTagCoffGroup:																				break;
+			}
+
+
 		}
 
-
-	}
-
-	void ReadUDTSymbol(IDiaSymbol* diaSymbol, uint32_t symIndexId_)
-	{
-		Result.UserType.emplace_back(diaSymbol, symIndexId_);
-		CComPtr<IDiaLineNumber> line = nullptr;
-		if (SUCCEEDED(diaSymbol->getSrcLineOnTypeDefn(&line)) && line)
+		void ReadUDTSymbol(IDiaSymbol* diaSymbol, uint32_t symIndexId_)
 		{
-			auto id = static_cast<uint32_t>(Result.SrcRange.size());
-			Result.UserType.back().src_line = id;
-			Result.SrcRange.emplace_back(id, line);
+			Result.UserType.emplace_back(diaSymbol, symIndexId_);
+			CComPtr<IDiaLineNumber> line = nullptr;
+			if (SUCCEEDED(diaSymbol->getSrcLineOnTypeDefn(&line)) && line)
+			{
+				auto id = static_cast<uint32_t>(Result.SrcRange.size());
+				Result.UserType.back().src_line = id;
+				Result.SrcRange.emplace_back(id, line);
+			}
 		}
-	}
 
-	void ReadCompilandDetailsSymbol(IDiaSymbol* diaSymbol)
-	{
-		DWORD Compiland = 0;
-		diaSymbol->get_lexicalParentId(&Compiland);
-		Sym::Compiland& Item = Result.Compiland[SymCompilandMap[Compiland]];
-		Item.AppendDetails(diaSymbol);
-	}
-	void ReadCompilandSymbol(IDiaSymbol* diaSymbol, uint32_t symIndexId_)
-	{
-		SymCompilandMap[symIndexId_] = static_cast<unsigned int>(Result.Compiland.size());
-		Result.Compiland.emplace_back(diaSymbol, symIndexId_);
-	}
+		void ReadCompilandDetailsSymbol(IDiaSymbol* diaSymbol)
+		{
+			DWORD Compiland = 0;
+			diaSymbol->get_lexicalParentId(&Compiland);
+			Sym::Compiland& Item = Result.Compiland[SymCompilandMap[Compiland]];
+			Item.AppendDetails(diaSymbol);
+		}
+		void ReadCompilandSymbol(IDiaSymbol* diaSymbol, uint32_t symIndexId_)
+		{
+			SymCompilandMap[symIndexId_] = static_cast<unsigned int>(Result.Compiland.size());
+			Result.Compiland.emplace_back(diaSymbol, symIndexId_);
+		}
 
-public:
-	DIA2::Provider Provider;
-	Dia2SymbolProvider(SymbolData& inResult)
-		:Result(inResult)
-	{
-	}
-	struct ReadSourceHelper
-	{
-		Dia2SymbolProvider& self;
-		ReadSourceHelper(Dia2SymbolProvider& in) : self(in) {}
-		void init(LONG n) { self.Result.SourceFile.reserve(n); }
-		template<class T> void element(T&& element) { self.ReadSource(element); }
+	public:
+		DIA2::Provider Provider;
+		Dia2SymbolProvider(SymbolData& inResult)
+			:Result(inResult)
+		{
+		}
+		struct ReadSourceHelper
+		{
+			Dia2SymbolProvider& self;
+			ReadSourceHelper(Dia2SymbolProvider& in) : self(in) {}
+			void init(LONG n) { self.Result.SourceFile.reserve(n); }
+			template<class T> void element(T&& element) { self.ReadSource(element); }
+		};
+
+		struct ReadSymbolHelper
+		{
+			Dia2SymbolProvider& self;
+			ReadSymbolHelper(Dia2SymbolProvider& in) : self(in) {}
+			void init(LONG n) { self.Result.Symbol.reserve(n); }
+			template<class T> void element(T&& element) { self.ReadSymbol(element); }
+		};
+
+		void ReadSymbols()
+		{
+			no_addresses = getFlag("-noaddress");
+			Result.Symbol.emplace_back();
+			ReadStreams(Provider.session);
+			DIA2::ReadTables(Provider.session,
+				Result.ReadSectionContrib(),
+				Result.ReadInjectedSource(),
+				ReadSourceHelper(*this),
+				ReadSymbolHelper(*this),
+				Result.ReadSegment(),
+				Result.ReadInputAssembly(),
+				Result.ReadFrame());
+		}
 	};
+}
 
-	struct ReadSymbolHelper
-	{
-		Dia2SymbolProvider& self;
-		ReadSymbolHelper(Dia2SymbolProvider& in) : self(in) {}
-		void init(LONG n) { self.Result.Symbol.reserve(n); }
-		template<class T> void element(T&& element) { self.ReadSymbol(element); }
-	};
-
-	void ReadSymbols()
-	{
-		no_addresses = getFlag("-noaddress");
-		Result.Symbol.emplace_back();
-		ReadStreams(Provider.session);
-		DIA2::ReadTables(Provider.session,
-			Result.ReadSectionContrib(),
-			Result.ReadInjectedSource(),
-			ReadSourceHelper(*this),
-			ReadSymbolHelper(*this),
-			Result.ReadSegment(),
-			Result.ReadInputAssembly(),
-			Result.ReadFrame());
-	}
-};
 namespace DIA2
 {
 	void ReadSymbols(const char* File, SymbolData& Result)

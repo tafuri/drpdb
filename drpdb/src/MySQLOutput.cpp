@@ -9,7 +9,7 @@
 #include "CSVWriter.h"
 #include "SQLSchemaWriter.h"
 
-namespace MySQL
+namespace
 {
 	struct SingleConnection
 	{
@@ -55,7 +55,7 @@ namespace MySQL
 				mysql_close(mysql);
 		}
 	};
-	struct Output
+	struct OutputData
 	{
 		SymbolData& Results;
 		std::vector<std::string> UploadCommands;
@@ -66,7 +66,7 @@ namespace MySQL
 		std::string user;
 		std::string pass;
 		std::string db;
-		Output(SymbolData& Res)
+		OutputData(SymbolData& Res)
 			:Results(Res)
 		{
 		}
@@ -76,7 +76,7 @@ namespace MySQL
 			user = getOption("-user");
 			pass = getOption("-pass");
 			db = getOption("-db");
-			
+
 
 			if (host.empty() || user.empty() || db.empty())
 			{
@@ -99,7 +99,7 @@ namespace MySQL
 			tempdir = getOption("-tempdir");
 			if (tempdir.size() == 0)
 			{
-				char buf[MAX_PATH+1] = {};
+				char buf[MAX_PATH + 1] = {};
 				auto len = GetCurrentDirectoryA(MAX_PATH, buf);
 				if (len > MAX_PATH)
 					throw "tempdir path too long";
@@ -202,10 +202,10 @@ namespace MySQL
 		void GenerateProcedures()
 		{
 			WIN32_FIND_DATAA found;
-			auto search = FindFirstFileA("../config/mysql/*.sql", &found);
+			auto search = FindFirstFileA("../../config/mysql/*.sql", &found);
 			while (search != INVALID_HANDLE_VALUE)
 			{
-				std::ifstream file(std::string("../config/mysql/")+found.cFileName);
+				std::ifstream file(std::string("../../config/mysql/") + found.cFileName);
 				if (file.good())
 				{
 					std::string file_contents{ std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
@@ -222,32 +222,36 @@ namespace MySQL
 			GenerateProcedures();
 #define BEGIN_STRUCT(type, name, desc,category) BuildTable(Results.type, #name );
 
-	#include "PDBReflection.inl"
+#include "PDBReflection.inl"
 		}
 	};
-
-
-
-	void output(SymbolData& Data)
+}
+namespace MySQL
+{
+	namespace
 	{
-		Output Result(Data);
-		Result.init();
-
-		MySQL::SingleConnection conn(Result.host.data(), Result.user.data(), Result.pass.data(), Result.db.data(), Result.port);
-
-		int i = 0;
-		while (!has_error() && i<Result.UploadCommands.size())
+		void output(SymbolData& Data)
 		{
-			conn.execute(Result.UploadCommands[i].data(), Result.UploadCommands[i].data() + Result.UploadCommands[i].size());
-			++i;
+			OutputData Result(Data);
+			Result.init();
+
+			SingleConnection conn(Result.host.data(), Result.user.data(), Result.pass.data(), Result.db.data(), Result.port);
+
+			int i = 0;
+			while (!has_error() && i<Result.UploadCommands.size())
+			{
+				conn.execute(Result.UploadCommands[i].data(), Result.UploadCommands[i].data() + Result.UploadCommands[i].size());
+				++i;
+			}
+		}
+
+		static std::string describe()
+		{
+			return
+				"    req: -host=<database server>\n    req: -user=<username>\n    req: -db=<database>\n    opt: -pass=<password>\n    opt: -port=<port number> (default 3306)\n    opt: -temp=<custom temp directory>";
 		}
 	}
 
-	static std::string describe()
-	{
-		return
-			"    req: -host=<database server>\n    req: -user=<username>\n    req: -db=<database>\n    opt: -pass=<password>\n    opt: -port=<port number> (default 3306)\n    opt: -temp=<custom temp directory>";
-	}
 	OutputEngine CreateEngine()
 	{
 		OutputEngine res;

@@ -6,7 +6,7 @@
 #include "drpdb.h"
 #include "CSVWriter.h"
 
-namespace CSV
+namespace
 {
 	struct Output
 	{
@@ -33,10 +33,10 @@ namespace CSV
 		{
 
 #define BEGIN_STRUCT(type, name, desc, category) if (table == #name ){ out += 
-	#define MEMBER(name, desc)  #name ","
-	#define END_STRUCT()  ; if (out.back() == ',') out.pop_back(); out+="\n";}
+#define MEMBER(name, desc)  #name ","
+#define END_STRUCT()  ; if (out.back() == ',') out.pop_back(); out+="\n";}
 
-	#include "PDBReflection.inl"
+#include "PDBReflection.inl"
 
 		}
 
@@ -77,11 +77,13 @@ namespace CSV
 		{
 #define BEGIN_STRUCT(type, name, desc, category) BuildTable(Results.type, #name );
 
-	#include "PDBReflection.inl"
+#include "PDBReflection.inl"
 
 		}
 	};
-
+}
+namespace CSV
+{
 	void writer::backup()
 	{
 		out.pop_back();
@@ -171,19 +173,22 @@ namespace CSV
 		out += ',';
 	}
 
-
-	void output(SymbolData& Data)
+	namespace
 	{
-		Output Result(Data);
-		Result.init();
-		Result.GenerateCommands();
+		void output(SymbolData& Data)
+		{
+			Output Result(Data);
+			Result.init();
+			Result.GenerateCommands();
+		}
+
+		static std::string describe()
+		{
+			return
+				"    opt: -outdir=<output directory>\n    opt: -nocolumnheaders";
+		}
 	}
 
-	static std::string describe()
-	{
-		return
-			"    opt: -outdir=<output directory>\n    opt: -nocolumnheaders";
-	}
 	OutputEngine CreateEngine()
 	{
 		OutputEngine res;

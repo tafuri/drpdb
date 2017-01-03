@@ -105,6 +105,8 @@ void PrintUsage()
 	std::cout << " -doc\r\n";
 	std::cout << "      Runs DIA API test suite, loading pdbs from config/doc/in.txt\r\n";
 	std::cout << "      Results output into config/doc/out.txt\r\n\r\n";
+	std::cout << " -wikidoc=<filename>\r\n";
+	std::cout << "      Outputs markdown documentation at the given filename.\r\n";
 	std::cout << "\r\n";
 }
 std::string gErr;
@@ -132,15 +134,6 @@ int main(int argc, char** argv)
 	}
 	SetCurrentDirectoryA(path);
 
-	init_engines();
-	SymbolData S;
-	std::string searchPath;
-
-#if !defined(_DEBUG)
-	_CrtSetDbgFlag( 0 );
-#endif
-	auto input = get_input_engine();
-	auto output = get_output_engine();
 	if (getFlag("-doc"))
 	{
 		DIA2::Document();
@@ -152,6 +145,17 @@ int main(int argc, char** argv)
 		WikiDoc::Output(wikidoc_filename.c_str());
 		return 0;
 	}
+
+	init_engines();
+	SymbolData S;
+	std::string searchPath;
+
+#if !defined(_DEBUG)
+	_CrtSetDbgFlag( 0 );
+#endif
+	auto input = get_input_engine();
+	auto output = get_output_engine();
+
 	if (!output)
 	{
 		PrintUsage();
