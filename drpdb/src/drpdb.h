@@ -821,7 +821,9 @@ namespace Sym
 		uint32_t line_end;
 		uint32_t column_begin;
 		uint32_t column_end;
-		address_info address;
+		uint32_t address_section;
+		uint32_t address_rv;
+		uint32_t address_offset;
 		uint32_t length;
 		bool statement;
 		SrcRange()  noexcept {}

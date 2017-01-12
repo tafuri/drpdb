@@ -763,7 +763,7 @@ Sym::SrcRange::SrcRange(uint32_t id_, IDiaLineNumber* line)  noexcept
 	line->get_columnNumberEnd(&D);
 	column_end = D;
 
-	address.init(line);
+	//address.init(line);
 
 	D = 0;
 	line->get_length(&D);
@@ -772,6 +772,19 @@ Sym::SrcRange::SrcRange(uint32_t id_, IDiaLineNumber* line)  noexcept
 	B = false;
 	line->get_statement(&B);
 	statement = !!B;
+
+	D = 0;
+	line->get_addressOffset(&D);
+	address_offset = D;
+
+	D = 0;
+	line->get_relativeVirtualAddress(&D);
+	address_rv = D;
+
+	D = 0;
+	line->get_addressSection(&D);
+	address_section = D;
+
 }
 Sym::BuiltinType::BuiltinType(IDiaSymbol* diaSymbol, uint32_t symIndexId_)  noexcept
 {
@@ -1274,7 +1287,10 @@ namespace
 				}
 			}
 		}
-
+		void ReadLines(IDiaLineNumber* line)
+		{
+			Result.SrcRange.emplace_back((uint32_t)Result.SrcRange.size(), line);
+		}
 		void ReadSource(IDiaSourceFile* item)
 		{
 			Result.SourceFile.emplace_back(item);
@@ -1365,6 +1381,10 @@ namespace
 		{
 			Result.UserType.emplace_back(diaSymbol, symIndexId_);
 			CComPtr<IDiaLineNumber> line = nullptr;
+
+			//this will cause double-counting of src lines
+			//entries added here will be duplicated by ReadLines
+			//not sure how to fix that...
 			if (SUCCEEDED(diaSymbol->getSrcLineOnTypeDefn(&line)) && line)
 			{
 				auto id = static_cast<uint32_t>(Result.SrcRange.size());
@@ -1407,7 +1427,13 @@ namespace
 			void init(LONG n) { self.Result.Symbol.reserve(n); }
 			template<class T> void element(T&& element) { self.ReadSymbol(element); }
 		};
-
+		struct ReadLineHelper
+		{
+			Dia2SymbolProvider& self;
+			ReadLineHelper(Dia2SymbolProvider& in) : self(in) {}
+			void init(LONG n) { self.Result.SrcRange.reserve(n); }
+			template<class T> void element(T&& element) { self.ReadLines(element); }
+		};
 		void ReadSymbols()
 		{
 			no_addresses = getFlag("-noaddress");
@@ -1420,7 +1446,8 @@ namespace
 				ReadSymbolHelper(*this),
 				Result.ReadSegment(),
 				Result.ReadInputAssembly(),
-				Result.ReadFrame());
+				Result.ReadFrame(),
+				ReadLineHelper(*this));
 		}
 	};
 }

@@ -41,8 +41,8 @@ namespace DIA2
 			}
 		}
 	}
-	template<class PSectionContrib, class PInjSrc, class PSrcFiles, class PSymbols, class PSegMap, class PInputAsms, class P_Frame>
-	void ReadTables(IDiaSession* session, PSectionContrib f_contrib, PInjSrc f_inj, PSrcFiles f_src,  PSymbols f_syms, PSegMap f_segmap, PInputAsms f_inasm, P_Frame f_frame)
+	template<class PSectionContrib, class PInjSrc, class PSrcFiles, class PSymbols, class PSegMap, class PInputAsms, class P_Frame, class P_Lines>
+	void ReadTables(IDiaSession* session, PSectionContrib f_contrib, PInjSrc f_inj, PSrcFiles f_src,  PSymbols f_syms, PSegMap f_segmap, PInputAsms f_inasm, P_Frame f_frame, P_Lines f_lines)
 	{
 		CComPtr<IDiaEnumTables> streamEnum = nullptr;
 		session->getEnumTables(&streamEnum);
@@ -109,6 +109,14 @@ namespace DIA2
 				if (S_OK == table->QueryInterface(__uuidof(IDiaEnumFrameData), (void**)&pEnumFrame))
 				{
 					DIA2::ReadTable<IDiaFrameData>(pEnumFrame, f_frame, "frame data");
+				}
+			}
+			else if (wcscmp(enumDataName, DiaTable_LineNums) == 0)
+			{
+				CComPtr<IDiaEnumLineNumbers> pEnumLineNums = nullptr;
+				if (S_OK == table->QueryInterface(__uuidof(IDiaEnumLineNumbers), (void**)&pEnumLineNums))
+				{
+					DIA2::ReadTable<IDiaLineNumber>(pEnumLineNums, f_lines, "line numbers");
 				}
 			}
 		}
