@@ -144,21 +144,11 @@ namespace CSV
 	}
 	void writer::operator<<(const std::string& V)
 	{
-		if (V.size() == 0)
-		{
-			out += "\"\"";
-		}
-		else if (std::any_of(V.begin(), V.end(), [](char c) { return c == '\\' || c == ',' || c == '"'; }))
-		{
-			auto copy = V;
-			escape(copy);
-			out += copy;
-		}
-		else
-		{
-			out += V;
-		}
-		out += ',';
+		out += "\"";
+		auto copy = V;
+		escape(copy);
+		out += std::move(copy);
+		out += "\",";
 	}
 	void writer::operator<<(bool V)
 	{
