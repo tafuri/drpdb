@@ -5,6 +5,13 @@
 using namespace Sym;
 namespace CSV
 {
+	namespace details
+	{
+		//get current locale dependent separator char
+		char getSeparator();
+		//append current separator to a given string
+		std::string appendSeparator(std::string value);
+	};
 	struct writer
 	{
 		std::string out;
@@ -40,7 +47,7 @@ namespace CSV
 
 #define BEGIN_ENUMERATION(name) void operator<<(name V){ out += "\""; switch (V) {
 #define ENUMERATOR(Tp, name) case Tp::name: out+= #name; break;
-#define END_ENUMERATION() } out += "\","; }
+#define END_ENUMERATION() } out += "\""; out += CSV::details::getSeparator(); }
 #include "PDBReflection.inl"
 
 	};

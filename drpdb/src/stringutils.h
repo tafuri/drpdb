@@ -16,7 +16,7 @@ inline void escape(T& str)
 			str.insert(i, 1, '\\');
 			++i;
 		}
-		else if (*v == ',')
+		else if (*v == CSV::details::getSeparator())
 		{
 			str.insert(i, 1, '\\');
 			++i;
