@@ -28,6 +28,12 @@
     <ClCompile Include="src\WikiDoc.cpp">
       <Filter>private</Filter>
     </ClCompile>
+    <ClCompile Include="src\SqliteOutput.cpp">
+      <Filter>private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sqlite\src\sqlite3.c">
+      <Filter>private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\stringutils.h">

@@ -75,6 +75,7 @@
     <ClInclude Include="src\drpdb.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\sqlite\src\sqlite3.c" />
     <ClCompile Include="src\CSVOutput.cpp" />
     <ClCompile Include="src\DIA2Common.cpp" />
     <ClCompile Include="src\DIA2Doc.cpp" />
@@ -83,6 +84,7 @@
     <ClCompile Include="src\ODBCOutput.cpp" />
     <ClCompile Include="src\drpdb.cpp" />
     <ClCompile Include="src\SQL.cpp" />
+    <ClCompile Include="src\SqliteOutput.cpp" />
     <ClCompile Include="src\WikiDoc.cpp" />
   </ItemGroup>
   <ItemGroup>

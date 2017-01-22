@@ -62,13 +62,15 @@ std::function<void(SymbolData&)> get_input_engine()
 std::vector<OutputEngine> gEngines;
 
 namespace ODBC { OutputEngine CreateEngine(); }
-namespace MySQL { OutputEngine CreateEngine(); }
+namespace MySQL { OutputEngine CreateEngine( ); }
+namespace Sqlite { OutputEngine CreateEngine(); }
 namespace CSV { OutputEngine CreateEngine(); }
 namespace WikiDoc { void Output(const char* filename); }
 
 void init_engines()
 {
-	gEngines.push_back(MySQL::CreateEngine());
+	gEngines.push_back(MySQL::CreateEngine( ));
+	gEngines.push_back(Sqlite::CreateEngine());
 	gEngines.push_back(CSV::CreateEngine());
 	gEngines.push_back(ODBC::CreateEngine());
 	// Remove null engines
