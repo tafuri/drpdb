@@ -263,26 +263,40 @@ private:
 
 class SqliteDatabase
 {
+	sqlite3 *db;
+	uint32_t options;
 public:
-	explicit SqliteDatabase( const char* filename )
+	enum Options
+	{
+		O_ENFORCE_UNIQUE = 0x0001,
+		O_VACUUM = 0x0002,
+		O_JOURNAL_MODE_MEMORY = 0x0004,
+	};
+	explicit SqliteDatabase( const char* filename, uint32_t opt )
+		: db( nullptr )
+		, options( opt )
 	{
 		const int rc = sqlite3_open( filename, &db );
 		if (rc != SQLITE_OK)
 			throw std::runtime_error( sqlite3_errstr( rc ) );
+		// Option needed?
 		execute( "PRAGMA synchronous = OFF" );
-		if (use_memory)
+		if (options & O_JOURNAL_MODE_MEMORY)
 			execute( "PRAGMA journal_mode = MEMORY" );
 	}
 	~SqliteDatabase( )
 	{
 		sqlite3_close( db );
 	}
+	SqliteDatabase( const SqliteDatabase& ) = delete;
+	SqliteDatabase& operator=( const SqliteDatabase& ) = delete;
 	void Build( const SymbolData& results )
 	{
 		BuildEnums( );
 		BuildTables( results );
 		CreateViews( );
-		execute( "VACUUM;" );
+		if (options & O_VACUUM)
+			execute( "VACUUM;" );
 	}
 private:
 	template<class T>
@@ -307,6 +321,7 @@ private:
 		Reflection<T> ti;
 
 		std::stringstream stmt;
+		const bool enforce_uniuque = options & O_ENFORCE_UNIQUE;
 
 		stmt << "CREATE TABLE " << tablename << "(";
 		auto* member = ti.Members( );
@@ -348,7 +363,7 @@ private:
 	}
 	void CreateViews()
 	{
-		const char* Views[][2] = {
+		static const char*const Views[][2] = {
 			{ "function_overview", "SELECT s.name, s.size, f.access, f.virtuality, f.frame_size, f.inline_, f.alloca_, ft.this_adjust, ft.this_type_symbol, ft.call_convention, ft.param_count FROM functions AS f JOIN symbols AS s ON s.symbol = f.symbol JOIN function_types AS ft ON f.type_symbol=ft.symbol" },
 			{ "functions_by_size", "SELECT name, size FROM functions NATURAL JOIN symbols ORDER BY size DESC LIMIT 1000" },
 			{ "types_by_size", "SELECT symbol, name, size FROM symbols JOIN Tag ON symbols.tag = Tag.value WHERE Tag.name = 'UDT' ORDER BY size DESC" },
@@ -391,16 +406,18 @@ private:
 			throw std::runtime_error( errMsg );
 		}
 	}
-private:
-	sqlite3 *db{ nullptr };
-	bool enforce_uniuque{ false };
-	bool use_memory{ true };
 };
 
 void output( SymbolData& Data )
 {
 	try {
-		SqliteDatabase database( getOption( "-outfile" ).c_str( ) );
+		uint32_t options{ 0 };
+
+		if (getOption( "-lowmem" ).empty( ))
+			options |= SqliteDatabase::Options::O_JOURNAL_MODE_MEMORY;
+		if (getOption( "-novacuum" ).empty( ))
+			options |= SqliteDatabase::Options::O_VACUUM;
+		SqliteDatabase database( getOption( "-outfile" ).c_str( ), options );
 		database.Build( Data );
 	}
 	catch (const std::runtime_error& e)
@@ -412,7 +429,11 @@ void output( SymbolData& Data )
 static std::string describe( )
 {
 	return
-		"    req: -outfile=<output file>\n";
+		R"(
+    req: -outfile=<output file>
+    opt: -lowmem   (slower but less memory usage)
+    opt: -novacuum (do not vacuum database)
+)";
 }
 
 OutputEngine CreateEngine( )
