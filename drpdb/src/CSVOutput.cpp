@@ -151,7 +151,7 @@ namespace CSV
 	{
 		out += "\"";
 		auto copy = V;
-		escape(copy);
+		escape(copy, separator);
 		out += std::move(copy);
 		out += "\"";
 		out += separator;

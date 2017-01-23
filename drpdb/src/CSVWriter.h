@@ -47,7 +47,7 @@ namespace CSV
 
 #define BEGIN_ENUMERATION(name) void operator<<(name V){ out += "\""; switch (V) {
 #define ENUMERATOR(Tp, name) case Tp::name: out+= #name; break;
-#define END_ENUMERATION() } out += "\""; out += CSV::details::getSeparator(); }
+#define END_ENUMERATION() } out += "\""; out += separator; }
 #include "PDBReflection.inl"
 
 	};
