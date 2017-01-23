@@ -37,7 +37,7 @@ namespace DIA2
 		ULONG totalNumFetched{ 0 };
 		while(totalNumFetched < (ULONG)num)
 		{
-			const auto numToFetch = std::min( num - totalNumFetched, ChunkSize );
+			const ULONG numToFetch = std::min( num - totalNumFetched, ChunkSize );
 			auto fetched = std::make_unique<CComPtr<T>[]>( numToFetch );
 			ULONG numFetched = 0;
 			const auto HR = enumerator->Next( numToFetch, (T**)fetched.get(), &numFetched );
@@ -47,6 +47,7 @@ namespace DIA2
 			{
 				p.element( fetched[f] );
 			}
+			totalNumFetched += numFetched;
 		}
 	}
 	template<class PSectionContrib, class PInjSrc, class PSrcFiles, class PSymbols, class PSegMap, class PInputAsms, class P_Frame, class P_Lines>
