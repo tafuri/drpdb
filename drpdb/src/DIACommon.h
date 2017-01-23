@@ -33,7 +33,7 @@ namespace DIA2
 		p.init(num);
 		std::cout << "Reading " << num << " " << name << std::endl;
 
-		const ULONG ChunkSize = 65536;
+		const ULONG ChunkSize = 4096;
 		ULONG totalNumFetched{ 0 };
 		while(totalNumFetched < (ULONG)num)
 		{
