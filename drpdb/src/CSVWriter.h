@@ -9,17 +9,17 @@ namespace CSV
 	{
 		//get current locale dependent separator char
 		char getSeparator();
-		//append current separator to a given string
-		std::string appendSeparator(std::string value);
 	};
 	struct writer
 	{
 		std::string out;
 		std::string outPath;
 		bool UseBitType;
-		writer(std::string path, bool UseBitType)
+		char separator;
+		writer(std::string path, bool UseBitType, char separator)
 			: outPath(std::move(path))
 			, UseBitType(UseBitType)
+			, separator(separator)
 		{}
 
 		void backup();
