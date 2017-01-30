@@ -27,7 +27,7 @@
 #endif
 BEGIN_STRUCT(Symbol, symbols, "For the compiler, any name used to identify coding constructs (such as a variable, function, structure, enumeration, constant, class, method, property, and so on) and memory locations within an application.", Sym::TableType::Master)
 	MEMBER(name, "A description of the symbol")
-	UNIQUE_MEMBER(symbol, "Corresponding *symbols* table entry")
+	UNIQUE_MEMBER(symbol, "Unique key for the symbol")
 	MEMBER(lexical_parent_symbol, "The region of source code in which a symbol (or identifier) is considered valid; that is, a namespace, file, function, block of code, or function prototype.")
 	MEMBER(parent_symbol, "Logical parent of the symbol")
 	MEMBER(size, "Size of the symbol in bytes")
