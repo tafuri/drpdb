@@ -156,7 +156,7 @@ namespace
 		template<class T>
 		void PopulateTable(T TableBegin, T TableEnd, const std::string& name)
 		{
-			CSV::writer Ar(tempdir + name + "_values.txt", true);
+			CSV::writer Ar(tempdir + name + "_values.txt", true, ',');
 			while (TableBegin != TableEnd)
 			{
 				Ar << *TableBegin;

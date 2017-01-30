@@ -29,3 +29,5 @@ drpdb/x64/Debug/drpdb.log
 *.log
 *.exe
 *.tlb
+*.tlb
+*.exe

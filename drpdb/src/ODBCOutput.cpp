@@ -97,7 +97,7 @@ namespace ODBC
 		template<class T>
 		void PopulateTable(T TableBegin, T TableEnd, const std::string& name)
 		{
-			CSV::writer Ar(TempDir + name + "_values.txt", false);
+			CSV::writer Ar(TempDir + name + "_values.txt", false, ',');
 			while (TableBegin != TableEnd)
 			{
 				Ar << *TableBegin;
