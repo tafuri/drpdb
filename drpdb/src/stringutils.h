@@ -1,6 +1,6 @@
 #pragma once
 template<class T>
-inline void escape(T& str)
+inline void escape(T& str, char separator)
 {
 	int i = 0;
 	auto v = str.begin();
@@ -16,7 +16,7 @@ inline void escape(T& str)
 			str.insert(i, 1, '\\');
 			++i;
 		}
-		else if (*v == ',')
+		else if (*v == separator)
 		{
 			str.insert(i, 1, '\\');
 			++i;
