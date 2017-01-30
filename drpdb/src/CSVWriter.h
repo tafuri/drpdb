@@ -5,14 +5,22 @@
 using namespace Sym;
 namespace CSV
 {
+	namespace details
+	{
+		//get current locale dependent separator char
+		char getSeparator();
+	}
+
 	struct writer
 	{
 		std::string out;
 		std::string outPath;
 		bool UseBitType;
-		writer(std::string path, bool UseBitType)
+		char separator;
+		writer(std::string path, bool UseBitType, char separator)
 			: outPath(std::move(path))
 			, UseBitType(UseBitType)
+			, separator(separator)
 		{}
 
 		void backup();
@@ -40,7 +48,7 @@ namespace CSV
 
 #define BEGIN_ENUMERATION(name) void operator<<(name V){ out += "\""; switch (V) {
 #define ENUMERATOR(Tp, name) case Tp::name: out+= #name; break;
-#define END_ENUMERATION() } out += "\","; }
+#define END_ENUMERATION() } out += "\""; out += separator; }
 #include "PDBReflection.inl"
 
 	};

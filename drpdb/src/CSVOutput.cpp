@@ -5,6 +5,8 @@
 #include <fstream>
 #include "drpdb.h"
 #include "CSVWriter.h"
+#include <locale>
+#include <codecvt>
 
 namespace
 {
@@ -13,8 +15,10 @@ namespace
 		SymbolData& Results;
 		std::string outdir;
 		bool naked;
+		char separator = ',';
 		Output(SymbolData& Res)
-			:Results(Res)
+			: Results(Res)
+			, separator()
 		{
 		}
 		void init()
@@ -27,14 +31,15 @@ namespace
 				outdir = buf;
 			}
 			naked = getFlag("-nocolumnheaders");
+			separator = CSV::details::getSeparator();
 		}
 
 		void AppendHeader(std::string table, std::string& out)
 		{
 
-#define BEGIN_STRUCT(type, name, desc, category) if (table == #name ){ out += 
-#define MEMBER(name, desc)  #name ","
-#define END_STRUCT()  ; if (out.back() == ',') out.pop_back(); out+="\n";}
+#define BEGIN_STRUCT(type, name, desc, category) if (table == #name ){ 
+#define MEMBER(name, desc)  out += ( #name );  out += separator;
+#define END_STRUCT()  ; if (out.back() == separator) out.pop_back(); out+="\n";}
 
 #include "PDBReflection.inl"
 
@@ -44,7 +49,7 @@ namespace
 		template<class T>
 		void PopulateTable(T TableBegin, T TableEnd, const std::string& name)
 		{
-			CSV::writer Ar(outdir + name + ".csv", true);
+			CSV::writer Ar(outdir + name + ".csv", true, separator);
 			if (!naked)
 			{
 				AppendHeader(name, Ar.out);
@@ -94,49 +99,49 @@ namespace CSV
 		char Buf[64];
 		_snprintf_s(Buf, 64, "%f", V);
 		out += Buf;
-		out += ",";
+		out += separator;
 	}
 	void writer::operator<<(int V)
 	{
 		char Buf[64];
 		_snprintf_s(Buf, 64, "%d", V);
 		out += Buf;
-		out += ",";
+		out += separator;
 	}
 	void writer::operator<<(uint32_t V)
 	{
 		char Buf[64];
 		_snprintf_s(Buf, 64, "%u", V);
 		out += Buf;
-		out += ",";
+		out += separator;
 	}
 	void writer::operator<<(unsigned long long V)
 	{
 		char Buf[90];
 		_snprintf_s(Buf, 64, "%llu", V);
 		out += Buf;
-		out += ",";
+		out += separator;
 	}
 	void writer::operator<<(long long V)
 	{
 		char Buf[64];
 		_snprintf_s(Buf, 64, "%lld", V);
 		out += Buf;
-		out += ',';
+		out += separator;
 	}
 	void writer::operator<<(long V)
 	{
 		char Buf[64];
 		_snprintf_s(Buf, 64, "%ld", V);
 		out += Buf;
-		out += ",";
+		out += separator;
 	}
 	void writer::operator<<(unsigned long V)
 	{
 		char Buf[64];
 		_snprintf_s(Buf, 64, "%lu", V);
 		out += Buf;
-		out += ',';
+		out += separator;
 	}
 	void writer::operator<<(const Sym::address_info& V)
 	{
@@ -146,9 +151,10 @@ namespace CSV
 	{
 		out += "\"";
 		auto copy = V;
-		escape(copy);
+		escape(copy, separator);
 		out += std::move(copy);
-		out += "\",";
+		out += "\"";
+		out += separator;
 	}
 	void writer::operator<<(bool V)
 	{
@@ -160,7 +166,7 @@ namespace CSV
 		{
 			out += V ? "TRUE" : "FALSE";
 		}
-		out += ',';
+		out += separator;
 	}
 
 	namespace
@@ -175,7 +181,7 @@ namespace CSV
 		static std::string describe()
 		{
 			return
-				"    opt: -outdir=<output directory>\n    opt: -nocolumnheaders";
+				"    opt: -outdir=<output directory>\n    opt: -nocolumnheaders\n     opt: -uselocaleseparator";
 		}
 	}
 
@@ -187,4 +193,26 @@ namespace CSV
 		res.describe = &describe;
 		return res;
 	}
+
+	namespace details
+	{
+		char getSeparator()
+		{
+			char SeparatorTmp = ',';
+			if (!getFlag("-uselocaleseparator"))
+			{
+				return SeparatorTmp;
+			}
+			auto nRequestedChars = ::GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SLIST, nullptr, 0);
+			if (2 == nRequestedChars) //we support only one char separator plus terminator (apparently possible up to tree)
+			{
+				std::vector<TCHAR> vSeparator(nRequestedChars, 0);
+				if (0 != ::GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SLIST, &(vSeparator[0]), nRequestedChars))
+				{
+					SeparatorTmp = *std::begin(std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(vSeparator[0]));
+				}
+			}
+			return SeparatorTmp;
+		}
+	};
 }
