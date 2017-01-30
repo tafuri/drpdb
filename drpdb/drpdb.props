@@ -3,6 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <DiaSDKDir>$(VSINSTALLDIR)DIA SDK\</DiaSDKDir>
+    <MysqlConnectorDir>$(SolutionDir)mysql-connector-c-6.1.6-winx64\</MysqlConnectorDir>
   </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup>
@@ -18,13 +19,20 @@
     <Link>
       <AdditionalDependencies>diaguids.lib;RpcRT4.lib;libmysql.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>libmysql.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
-      <AdditionalLibraryDirectories>..\mysql-connector-c-6.1.6-winx64\lib;$(DiaSDKDir)lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MysqlConnectorDir)\lib;$(DiaSDKDir)lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Midl />
+    <PostBuildEvent>
+      <Command>xcopy /y "$(MysqlConnectorDir)lib\libmysql.dll" "$(TargetDir)"</Command>
+      <Message>Copying mysql connector DLL</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <BuildMacro Include="DiaSDKDir">
       <Value>$(DiaSDKDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MysqlConnectorDir">
+      <Value>$(MysqlConnectorDir)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
